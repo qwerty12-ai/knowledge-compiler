@@ -16,7 +16,7 @@ dependencies = []
 dev = ["pytest>=8.0"]
 
 [project.scripts]
-knowledge-compiler = "knowledge-compiler.cli:main"
+knowledge-compiler = "knowledge_compiler.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
