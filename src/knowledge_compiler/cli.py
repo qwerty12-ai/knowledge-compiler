@@ -1,5 +1,6 @@
 import argparse
 from pathlib import Path
+from knowledge_compiler.discovery import discover_files
 
 def analyze(repository: str) -> None:
     path = Path(repository)
@@ -13,6 +14,13 @@ def analyze(repository: str) -> None:
         return
 
     print(f"Analyzing repository: {path.resolve()}")
+
+    files = discover_files(path)
+
+    print(f"Discovered {len(files)} files")
+
+    for file in files:
+        print(f"{file.relative_to(path)}")
 
 def main() -> None:
     parser = argparse.ArgumentParser(

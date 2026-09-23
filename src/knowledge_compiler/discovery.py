@@ -18,7 +18,7 @@ def discover_files(repository: Path) -> list[Path]:
         if not path.is_file():
             continue
 
-        if any(part in IGNORED_DIRECTORIES for part in path.parts):
+        if any(part in IGNORED_DIRECTORIES or part.endswith(".egg-info") for part in path.parts):
             continue
 
         files.append(path)

@@ -15,3 +15,14 @@ def test_discover_files_skips_ignored_directories(tmp_path):
     files = discover_files(tmp_path)
 
     assert files == [Path(tmp_path / "src" / "main.py")]
+
+def test_discover_files_skips_egg_info(tmp_path):
+    (tmp_path / "src").mkdir()
+    (tmp_path / "project.egg-info").mkdir()
+
+    (tmp_path / "src" / "main.py").write_text("print('hello')")
+    (tmp_path / "project.egg-info" / "PKG-INFO").write_text("generated")
+
+    files = discover_files(tmp_path)
+
+    assert files == [tmp_path / "src" / "main.py"]
