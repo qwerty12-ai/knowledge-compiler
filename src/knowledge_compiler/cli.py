@@ -1,6 +1,7 @@
 import argparse
 from pathlib import Path
 from knowledge_compiler.discovery import discover_files
+from knowledge_compiler.evidence import extract_evidence
 
 def analyze(repository: str) -> None:
     path = Path(repository)
@@ -21,6 +22,12 @@ def analyze(repository: str) -> None:
 
     for file in files:
         print(f"{file.path.relative_to(path)}")
+
+    for file in files:
+        evidence = extract_evidence(file.path)
+
+        for item in evidence:
+            print(f"Evidence: {item.description}")
 
 def main() -> None:
     parser = argparse.ArgumentParser(

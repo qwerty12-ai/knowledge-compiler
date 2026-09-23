@@ -9,3 +9,8 @@ class DiscoveredFile:
     size_bytes: str
     category: str
 
+@dataclass(frozen=True)
+class Evidence:
+    source: Path
+    kind: str
+    description: str
