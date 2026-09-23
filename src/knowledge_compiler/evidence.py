@@ -10,7 +10,16 @@ def extract_evidence(file_path: Path) -> list[Evidence]:
     if not content.strip():
         return []
 
-    kind = "documentation" if file_path.name.lower() == "readme.md" else "file_content"
+    name = file_path.name.lower()
+
+    if name == "readme.md":
+        kind = "documentation"
+    elif name in {"pyproject.toml", "requirements.txt", "package.json"}:
+        kind = "dependency"
+    elif name.startswith("test_") or name.endswith("_test.py"):
+        kind = "test"
+    else:
+        kind = "file_content"
 
     return [
         Evidence(

@@ -34,11 +34,29 @@ def test_extract_evidence_from_invalid_utf8(tmp_path):
 
 def test_extract_evidence_from_readme(tmp_path):
     file_path = tmp_path / "README.md"
-    file_path.write_text("# Knowledge Compiler\n\nA tool for analyzing repositories.")
+    file_path.write_text("# Knowledge Compiler\n")
 
     evidence = extract_evidence(file_path)
 
-    assert any(
-        item.kind == "documentation"
-        for item in evidence
-    )
+    assert len(evidence) == 1
+    assert evidence[0].kind == "documentation"
+
+
+def test_extract_evidence_from_dependency_file(tmp_path):
+    file_path = tmp_path / "pyproject.toml"
+    file_path.write_text("[project]\nname = 'demo'\n")
+
+    evidence = extract_evidence(file_path)
+
+    assert len(evidence) == 1
+    assert evidence[0].kind == "dependency"
+
+
+def test_extract_evidence_from_test_file(tmp_path):
+    file_path = tmp_path / "test_auth.py"
+    file_path.write_text("def test_login():\n    assert True\n")
+
+    evidence = extract_evidence(file_path)
+
+    assert len(evidence) == 1
+    assert evidence[0].kind == "test"
