@@ -10,10 +10,12 @@ def extract_evidence(file_path: Path) -> list[Evidence]:
     if not content.strip():
         return []
 
+    kind = "documentation" if file_path.name.lower() == "readme.md" else "file_content"
+
     return [
         Evidence(
             source=file_path,
-            kind="file_content",
+            kind=kind,
             description=f"File contains {len(content.splitlines())} lines of source code."
         )
     ]

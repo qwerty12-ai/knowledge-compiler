@@ -31,3 +31,14 @@ def test_extract_evidence_from_invalid_utf8(tmp_path):
     evidence = extract_evidence(file_path)
 
     assert evidence == []
+
+def test_extract_evidence_from_readme(tmp_path):
+    file_path = tmp_path / "README.md"
+    file_path.write_text("# Knowledge Compiler\n\nA tool for analyzing repositories.")
+
+    evidence = extract_evidence(file_path)
+
+    assert any(
+        item.kind == "documentation"
+        for item in evidence
+    )
