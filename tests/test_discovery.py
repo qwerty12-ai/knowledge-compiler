@@ -1,6 +1,6 @@
 from pathlib import Path
-
 from knowledge_compiler.discovery import discover_files
+from knowledge_compiler.models import DiscoveredFile
 
 
 def test_discover_files_skips_ignored_directories(tmp_path):
@@ -14,7 +14,8 @@ def test_discover_files_skips_ignored_directories(tmp_path):
 
     files = discover_files(tmp_path)
 
-    assert files == [Path(tmp_path / "src" / "main.py")]
+    assert len(files) == 1
+    assert files[0].path == Path("src/main.py")
 
 def test_discover_files_skips_egg_info(tmp_path):
     (tmp_path / "src").mkdir()
@@ -25,4 +26,12 @@ def test_discover_files_skips_egg_info(tmp_path):
 
     files = discover_files(tmp_path)
 
-    assert files == [tmp_path / "src" / "main.py"]
+    assert files == [
+        DiscoveredFile(
+            path=Path("src/main.py"),
+            extension=".py",
+            language="Python",
+            size_bytes=len("print('hello')".encode()),
+            category="source"
+        )
+    ]

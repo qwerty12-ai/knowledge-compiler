@@ -20,7 +20,7 @@ def analyze(repository: str) -> None:
     print(f"Discovered {len(files)} files")
 
     for file in files:
-        print(f"{file.relative_to(path)}")
+        print(f"{file.path.relative_to(path)}")
 
 def main() -> None:
     parser = argparse.ArgumentParser(
