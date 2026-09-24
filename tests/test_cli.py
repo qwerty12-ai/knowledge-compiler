@@ -6,6 +6,8 @@ def test_analyze_existing_repository(capsys):
     captured = capsys.readouterr()
 
     assert "Analyzing repository:" in captured.out
+    assert "Generated" in captured.out
+    assert "Claim:" in captured.out
 
 def test_analyze_missing_repository(capsys):
     analyze("./does-not-exist")

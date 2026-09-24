@@ -2,6 +2,7 @@ import argparse
 from pathlib import Path
 from knowledge_compiler.discovery import discover_files
 from knowledge_compiler.evidence import extract_evidence
+from knowledge_compiler.claims import generate_claims
 
 def analyze(repository: str) -> None:
     path = Path(repository)
@@ -23,11 +24,21 @@ def analyze(repository: str) -> None:
     for file in files:
         print(f"{file.path.relative_to(path)}")
 
+    all_evidence = []
+
     for file in files:
         evidence = extract_evidence(file.path)
+        all_evidence.extend(evidence)
 
         for item in evidence:
             print(f"Evidence: {item.description}")
+
+    claims = generate_claims(all_evidence)
+
+    print(f"Generated {len(claims)} claims")
+
+    for claim in claims:
+        print(f"Claim: {claim.statement}")
 
 def main() -> None:
     parser = argparse.ArgumentParser(
