@@ -22,5 +22,14 @@ def generate_claims(evidence: list[Evidence]) -> list[Claim]:
                     status="SUPPORTED"
                 )
             )
+        elif item.kind == "test":
+            claims.append(
+                Claim(
+                    statement="The repository contains automated tests.",
+                    evidence=(item,),
+                    confidence=0.9,
+                    status="SUPPORTED"
+                )
+            )
 
     return claims

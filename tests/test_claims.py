@@ -58,3 +58,20 @@ def test_generate_claims_ignores_unknown_evidence(tmp_path: Path):
     )
 
     assert generate_claims([evidence]) == []
+
+def test_generate_claim_for_repository_with_tests(tmp_path: Path):
+    test_file = tmp_path / "test_payment.py"
+
+    evidence = Evidence(
+        source=test_file,
+        kind="test",
+        description="File contains 10 lines of source code.",
+        language="Python"
+    )
+
+    claims = generate_claims([evidence])
+
+    assert len(claims) == 1
+    assert claims[0].statement == "The repository contains automated tests."
+    assert claims[0].evidence == (evidence,)
+    assert claims[0].status == "SUPPORTED"
