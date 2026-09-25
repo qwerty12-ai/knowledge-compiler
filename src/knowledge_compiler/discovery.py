@@ -42,7 +42,7 @@ def detect_category(path: Path) -> str:
     if path.suffix.lower() in {".md", ".txt"}:
         return "documentation"
 
-    if path.name in {"pyproject.toml" "package.json", "requirements.txt"}:
+    if path.name in {"pyproject.toml", "package.json", "requirements.txt"}:
         return "configuration"
 
     return "source"

@@ -6,7 +6,7 @@ class DiscoveredFile:
     path: Path
     extension: str
     language: str | None
-    size_bytes: str
+    size_bytes: int
     category: str
 
 @dataclass(frozen=True)
