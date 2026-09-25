@@ -60,3 +60,12 @@ def test_extract_evidence_from_test_file(tmp_path):
 
     assert len(evidence) == 1
     assert evidence[0].kind == "test"
+
+def test_extract_evidence_includes_language(tmp_path):
+    file_path = tmp_path / "test_auth.py"
+    file_path.write_text("print('hello')\n")
+
+    evidence = extract_evidence(file_path)
+
+    assert len(evidence) == 1
+    assert evidence[0].language == "Python"

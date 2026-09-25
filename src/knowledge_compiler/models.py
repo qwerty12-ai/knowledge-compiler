@@ -14,6 +14,7 @@ class Evidence:
     source: Path
     kind: str
     description: str
+    language: str | None = None
 
 @dataclass(frozen=True)
 class Claim:

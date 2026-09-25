@@ -1,5 +1,6 @@
 from pathlib import Path
 from knowledge_compiler.models import Evidence
+from knowledge_compiler.discovery import detect_language
 
 def extract_evidence(file_path: Path) -> list[Evidence]:
     try:
@@ -25,6 +26,7 @@ def extract_evidence(file_path: Path) -> list[Evidence]:
         Evidence(
             source=file_path,
             kind=kind,
-            description=f"File contains {len(content.splitlines())} lines of source code."
+            description=f"File contains {len(content.splitlines())} lines of source code.",
+            language=detect_language(file_path)
         )
     ]
