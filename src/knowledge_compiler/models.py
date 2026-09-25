@@ -26,3 +26,8 @@ class Claim:
     def __post_init__(self):
         if not 0.0 <= self.confidence <= 1.0:
             raise ValueError("Confidence must be between 0.0 and 1.0")
+
+@dataclass(frozen=True)
+class RepositoryContext:
+    files: tuple[DiscoveredFile,...]
+    evidence: tuple[Evidence,...]
