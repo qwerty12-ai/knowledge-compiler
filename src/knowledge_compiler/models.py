@@ -15,6 +15,7 @@ class Evidence:
     kind: str
     description: str
     language: str | None = None
+    content: str | None = None
 
 @dataclass(frozen=True)
 class Claim:

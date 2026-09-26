@@ -69,3 +69,13 @@ def test_extract_evidence_includes_language(tmp_path):
 
     assert len(evidence) == 1
     assert evidence[0].language == "Python"
+
+def test_extract_evidence_includes_content(tmp_path):
+    file_path = tmp_path / "example.py"
+    content = "def hello():\nreturn 'world'\n"
+    file_path.write_text(content)
+
+    evidence = extract_evidence(file_path)
+
+    assert len(evidence) == 1
+    assert evidence[0].content == content

@@ -27,6 +27,7 @@ def extract_evidence(file_path: Path) -> list[Evidence]:
             source=file_path,
             kind=kind,
             description=f"File contains {len(content.splitlines())} lines of source code.",
-            language=detect_language(file_path)
+            language=detect_language(file_path),
+            content=content
         )
     ]
