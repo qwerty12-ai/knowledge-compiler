@@ -1,8 +1,7 @@
 import argparse
 from pathlib import Path
-from knowledge_compiler.discovery import discover_files
-from knowledge_compiler.evidence import extract_evidence
 from knowledge_compiler.claims import generate_claims
+from knowledge_compiler.context import build_repository_context
 
 def analyze(repository: str) -> None:
     path = Path(repository)
@@ -17,23 +16,17 @@ def analyze(repository: str) -> None:
 
     print(f"Analyzing repository: {path.resolve()}")
 
-    files = discover_files(path)
+    context = build_repository_context(path)
 
-    print(f"Discovered {len(files)} files")
+    print(f"Discovered {len(context.files)} files")
 
-    for file in files:
-        print(f"{file.path.relative_to(path)}")
+    for file in context.files:
+        print(f"{file.path}")   
 
-    all_evidence = []
+    for item in context.evidence:
+        print(f"Evidence: {item.description}") 
 
-    for file in files:
-        evidence = extract_evidence(file.path)
-        all_evidence.extend(evidence)
-
-        for item in evidence:
-            print(f"Evidence: {item.description}")
-
-    claims = generate_claims(all_evidence)
+    claims = generate_claims(list(context.evidence))
 
     print(f"Generated {len(claims)} claims")
 
