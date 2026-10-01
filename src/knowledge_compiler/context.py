@@ -22,7 +22,7 @@ def build_repository_context(repository: Path) -> RepositoryContext:
             except (SyntaxError, UnicodeDecodeError, OSError):
                 continue
 
-    all_structures.append(structure)
+            all_structures.append(structure)
 
     return RepositoryContext(
         files=tuple(files),
