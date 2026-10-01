@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from knowledge_compiler.investigation import InvestigationUnit
 from knowledge_compiler.investigator import InvestigationResult, investigate
@@ -85,3 +86,51 @@ def test_investigate_observes_documentation():
         "The unit contains documentation."
         in result.observations
     )
+
+
+class FakeMessage:
+    def __init__(self, content):
+        self.content = content
+
+
+class FakeResponse:
+    def __init__(self, content):
+        self.message = FakeMessage(content)
+
+
+class FakeOllamaClient:
+    def __init__(self):
+        self.messages = None
+
+    def chat(self, **kwargs):
+        self.messages = kwargs["messages"]
+        return FakeResponse(
+            json.dumps(
+                {
+                    "observations": [
+                        "The function returns the sum of two values."
+                    ]
+                }
+            )
+        )
+
+
+def test_investigate_uses_model_response():
+    unit = InvestigationUnit(
+        source=Path("src/math_utils.py"),
+        name="add",
+        kind="function",
+        content="def add(a, b):\n    return a + b",
+        line_start=1,
+        line_end=2,
+    )
+    client = FakeOllamaClient()
+
+    result = investigate(unit, client=client)
+
+    assert result.unit == unit
+    assert result.observations == (
+        "The unit defines a function named add.",
+        "The function returns the sum of two values.",
+    )
+    assert client.messages is not None
