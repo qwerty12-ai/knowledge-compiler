@@ -1,3 +1,4 @@
+from knowledge_compiler.structure import CodeStructure
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -32,3 +33,4 @@ class Claim:
 class RepositoryContext:
     files: tuple[DiscoveredFile,...]
     evidence: tuple[Evidence,...]
+    structures: tuple[CodeStructure,...] = ()

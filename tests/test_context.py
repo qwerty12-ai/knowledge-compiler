@@ -57,3 +57,24 @@ def test_build_repository_context_from_repository(tmp_path: Path):
         evidence.language == "Python"
         for evidence in context.evidence
     )
+
+def test_build_repository_context_extracts_python_structure(tmp_path: Path):
+    source_file = tmp_path / "payment.py"
+    source_file.write_text(
+        "class PaymentService:\n"
+        "    def execute(self):\n"
+        "        pass\n"
+    )
+
+    context = build_repository_context(tmp_path)
+
+    assert len(context.structures) == 1
+
+    structure = context.structures[0]
+
+    assert len(structure.classes) == 1
+    assert structure.classes[0].name == "PaymentService"
+
+    assert len(structure.functions) == 1
+    assert structure.functions[0].name == "execute"
+    assert structure.functions[0].parent_class == "PaymentService"
