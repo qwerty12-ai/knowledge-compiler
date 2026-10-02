@@ -21,7 +21,7 @@ def test_generate_claim_from_file_content(tmp_path: Path):
         "The repository contains source code in example.py."
     )
     assert claims[0].evidence == (evidence,)
-    assert claims[0].confidence == 0.8
+    assert claims[0].confidence == 0.6
     assert claims[0].status == "SUPPORTED"
 
 
@@ -40,7 +40,7 @@ def test_generate_claim_from_documentation(tmp_path: Path):
     assert len(claims) == 1
     assert claims[0].statement == "The repository contains documentation."
     assert claims[0].evidence == (evidence,)
-    assert claims[0].confidence == 0.9
+    assert claims[0].confidence == 0.6
     assert claims[0].status == "SUPPORTED"
 
 

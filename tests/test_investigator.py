@@ -3,6 +3,31 @@ from pathlib import Path
 from knowledge_compiler.investigation import InvestigationUnit
 from knowledge_compiler.investigator import InvestigationResult, investigate
 
+class FakeMessage:
+    def __init__(self, content):
+        self.content = content
+
+
+class FakeResponse:
+    def __init__(self, content):
+        self.message = FakeMessage(content)
+
+
+class FakeOllamaClient:
+    def __init__(self, observations=None):
+        self.messages = None
+        self.observations = (observations if observations is not None else [])
+
+    def chat(self, **kwargs):
+        self.messages = kwargs["messages"]
+        return FakeResponse(
+            json.dumps(
+                {
+                    "observations": self.observations
+                }
+            )
+        )
+
 def test_investigation_result_stores_unit_and_observations():
     unit = InvestigationUnit(
         source=Path("src/payments.py"),
@@ -33,7 +58,7 @@ def test_investigate_returns_result_for_unit():
         line_end=2,
     )
 
-    result = investigate(unit)
+    result = investigate(unit, client=FakeOllamaClient())
 
     assert isinstance(result, InvestigationResult)
     assert result.unit == unit
@@ -48,7 +73,7 @@ def test_investigate_observes_function_name():
         line_end=2,
     )
 
-    result = investigate(unit)
+    result = investigate(unit, client=FakeOllamaClient())
 
     assert "The unit defines a function named process_payment." in (
         result.observations
@@ -64,7 +89,7 @@ def test_investigate_observes_class_name():
         line_end=2,
     )
 
-    result = investigate(unit)
+    result = investigate(unit, client=FakeOllamaClient())
 
     assert (
         "The unit defines a class named PaymentProcessor."
@@ -80,7 +105,7 @@ def test_investigate_observes_documentation():
         content="# Payment Service",
     )
 
-    result = investigate(unit)
+    result = investigate(unit, client=FakeOllamaClient())
 
     assert (
         "The unit contains documentation."
@@ -88,31 +113,6 @@ def test_investigate_observes_documentation():
     )
 
 
-class FakeMessage:
-    def __init__(self, content):
-        self.content = content
-
-
-class FakeResponse:
-    def __init__(self, content):
-        self.message = FakeMessage(content)
-
-
-class FakeOllamaClient:
-    def __init__(self):
-        self.messages = None
-
-    def chat(self, **kwargs):
-        self.messages = kwargs["messages"]
-        return FakeResponse(
-            json.dumps(
-                {
-                    "observations": [
-                        "The function returns the sum of two values."
-                    ]
-                }
-            )
-        )
 
 
 def test_investigate_uses_model_response():
@@ -124,7 +124,11 @@ def test_investigate_uses_model_response():
         line_start=1,
         line_end=2,
     )
-    client = FakeOllamaClient()
+    client = FakeOllamaClient( 
+        observations=[
+            "The function returns the sum of two values."
+        ]
+    )
 
     result = investigate(unit, client=client)
 
