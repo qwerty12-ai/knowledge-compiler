@@ -1,6 +1,18 @@
 from knowledge_compiler.cli import analyze
+from knowledge_compiler.investigator import InvestigationResult
 
-def test_analyze_existing_repository(capsys):
+def fake_investigate(unit):
+    return InvestigationResult(
+        unit=unit,
+        observations=("The unit contains a test observation.",)
+    )
+
+def test_analyze_existing_repository(capsys, monkeypatch):
+    monkeypatch.setattr(
+        "knowledge_compiler.cli.investigate",
+        fake_investigate
+    )
+
     analyze(".")
 
     captured = capsys.readouterr()

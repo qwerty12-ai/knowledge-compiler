@@ -28,6 +28,12 @@ class FakeOllamaClient:
             )
         )
 
+class FakeMalformedOllamaClient:
+    def chat(self, **kwargs):
+        return FakeResponse(
+            '{"observations": ["This response is truncated'
+        )
+
 def test_investigation_result_stores_unit_and_observations():
     unit = InvestigationUnit(
         source=Path("src/payments.py"),
@@ -138,3 +144,23 @@ def test_investigate_uses_model_response():
         "The function returns the sum of two values.",
     )
     assert client.messages is not None
+
+def test_investigate_handles_malformed_model_response():
+    unit = InvestigationUnit(
+        source=Path("src/payments.py"),
+        name="process_payment",
+        kind="function",
+        content="def process_payment():\n    pass",
+        line_start=1,
+        line_end=2,
+    )
+
+    result = investigate(
+        unit,
+        client=FakeMalformedOllamaClient(),
+    )
+
+    assert result.unit == unit
+    assert result.observations == (
+        "The unit defines a function named process_payment.",
+    )

@@ -53,12 +53,16 @@ def investigate(unit: InvestigationUnit,client=None) -> InvestigationResult:
         }
     )
 
-    data = json.loads(response.message.content)
+    try:
+        data = json.loads(response.message.content)
+    except json.JSONDecodeError:
+        data = {}
+
     model_observations = data.get("observations", [])
+    if(isinstance(data, dict) and isinstance(model_observations, list) and all(isinstance(item,str) for item in model_observations)):
+        observations.extend(model_observations)
 
-    if not isinstance(model_observations, list) or not all(isinstance(item, str) for item in model_observations):
-        raise ValueError("Model response must contain an observations array of strings.")
-
-    observations.extend(model_observations)
-
-    return InvestigationResult(unit=unit, observations=tuple(observations))
+    return InvestigationResult(
+        unit=unit,
+        observations=tuple(observations)
+    )

@@ -2,6 +2,9 @@ import argparse
 from pathlib import Path
 from knowledge_compiler.claims import generate_claims
 from knowledge_compiler.context import build_repository_context
+from knowledge_compiler.investigation import build_investigation_units
+from knowledge_compiler.investigator import investigate
+from knowledge_compiler.observation_evidence import (convert_observations_to_evidence)
 
 def analyze(repository: str) -> None:
     path = Path(repository)
@@ -24,14 +27,35 @@ def analyze(repository: str) -> None:
         print(f"{file.path}")   
 
     for item in context.evidence:
-        print(f"Evidence: {item.description}") 
+        print(f"Evidence: {item.description}")
 
-    claims = generate_claims(list(context.evidence))
+    units = build_investigation_units(context)
+
+    print(f"Created {len(units)} investigation units")
+
+    all_evidence = list(context.evidence)
+
+    for unit in units:
+        result = investigate(unit)
+        observation_evidence = convert_observations_to_evidence(result)
+
+    all_evidence.extend(observation_evidence)
+
+    claims = generate_claims(all_evidence)
 
     print(f"Generated {len(claims)} claims")
 
     for claim in claims:
         print(f"Claim: {claim.statement}")
+        print(f"Status: {claim.status}")
+        print(f"Confidence: {claim.confidence:.2f}")
+
+        for item in claim.evidence:
+            print(f"    Source: {item.source}")
+            print(f"    Evidence type: {item.kind}")
+
+            if item.line_start is not None:
+                print(f"    Lines: {item.line_start} - {item.line_end}")
 
 def main() -> None:
     parser = argparse.ArgumentParser(
