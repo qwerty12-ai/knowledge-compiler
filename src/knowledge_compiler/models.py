@@ -17,6 +17,8 @@ class Evidence:
     description: str
     language: str | None = None
     content: str | None = None
+    line_start: int | None = None
+    line_end: int | None = None
 
 @dataclass(frozen=True)
 class Claim:

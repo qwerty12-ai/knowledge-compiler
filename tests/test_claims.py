@@ -129,3 +129,47 @@ def test_generate_claims_keeps_different_statements_separate(
     assert claims[1].statement == (
         "The repository contains automated tests."
     )
+
+def test_generate_claims_from_ai_observation():
+    evidence = [
+        Evidence(
+            source=Path("payments.py"),
+            kind="ai_observation",
+            description="The function returns True.",
+            content="def process_payment():\n    return True",
+            line_start=1,
+            line_end=2,
+        )
+    ]
+
+    claims = generate_claims(evidence)
+
+    assert len(claims) == 1
+    assert claims[0].statement == "The function returns True."
+    assert claims[0].evidence == tuple(evidence)
+    assert claims[0].evidence[0].line_start == 1
+    assert claims[0].status == "UNKNOWN"
+
+
+def test_generate_claims_aggregates_identical_ai_observations():
+    evidence = [
+        Evidence(
+            source=Path("payments.py"),
+            kind="ai_observation",
+            description="The function returns True.",
+        ),
+        Evidence(
+            source=Path("refunds.py"),
+            kind="ai_observation",
+            description="The function returns True.",
+        ),
+    ]
+
+    claims = generate_claims(evidence)
+
+    assert len(claims) == 1
+    assert len(claims[0].evidence) == 2
+    assert {item.source for item in claims[0].evidence} == {
+        Path("payments.py"),
+        Path("refunds.py"),
+    }
