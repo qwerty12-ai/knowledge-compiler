@@ -2,7 +2,7 @@ from knowledge_compiler.models import Claim, Evidence
 from knowledge_compiler.confidence import assess_confidence
 
 def generate_claims(evidence: list[Evidence]) -> list[Claim]:
-    claims: list[Claim] = []
+    grouped_evidence: dict[str,list[Evidence]] = {} 
 
     for item in evidence:
         statement = None
@@ -14,13 +14,20 @@ def generate_claims(evidence: list[Evidence]) -> list[Claim]:
         elif item.kind == "test":
             statement = "The repository contains automated tests."
         if statement is not None:
-            supporting_evidence = (item,)
+            if statement not in grouped_evidence:
+                grouped_evidence[statement] = []
 
+            grouped_evidence[statement].append(item)
+
+    claims: list[Claim] = []
+
+    for statement, supported_evidence in grouped_evidence.items():
+            evidence_tuple = tuple(supported_evidence)
             claims.append(
                 Claim(
                     statement=statement,
-                    evidence=supporting_evidence,
-                    confidence=assess_confidence(supporting_evidence),
+                    evidence=evidence_tuple,
+                    confidence=assess_confidence(evidence_tuple),
                     status="SUPPORTED"
                 )
             )

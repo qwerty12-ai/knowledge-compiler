@@ -75,3 +75,57 @@ def test_generate_claim_for_repository_with_tests(tmp_path: Path):
     assert claims[0].statement == "The repository contains automated tests."
     assert claims[0].evidence == (evidence,)
     assert claims[0].status == "SUPPORTED"
+
+def test_generate_claims_aggregates_evidence_for_same_statement(
+    tmp_path: Path,
+):
+    first_file = tmp_path / "test_payment.py"
+    second_file = tmp_path / "test_refund.py"
+
+    first_evidence = Evidence(
+        source=first_file,
+        kind="test",
+        description="Payment tests.",
+        language="Python",
+    )
+    second_evidence = Evidence(
+        source=second_file,
+        kind="test",
+        description="Refund tests.",
+        language="Python",
+    )
+
+    claims = generate_claims([first_evidence, second_evidence])
+
+    assert len(claims) == 1
+    assert claims[0].statement == (
+        "The repository contains automated tests."
+    )
+    assert claims[0].evidence == (first_evidence, second_evidence)
+    assert claims[0].confidence == 0.8
+    assert claims[0].status == "SUPPORTED"
+
+
+def test_generate_claims_keeps_different_statements_separate(
+    tmp_path: Path,
+):
+    documentation = Evidence(
+        source=tmp_path / "README.md",
+        kind="documentation",
+        description="Repository documentation.",
+    )
+    tests = Evidence(
+        source=tmp_path / "test_app.py",
+        kind="test",
+        description="Application tests.",
+    )
+
+    claims = generate_claims([documentation, tests])
+
+    assert len(claims) == 2
+    assert claims[0].statement == (
+        "The repository contains documentation."
+    )
+    assert claims[1].statement == (
+        "The repository contains automated tests."
+    )
