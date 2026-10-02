@@ -6,7 +6,7 @@ from knowledge_compiler.investigation import build_investigation_units
 from knowledge_compiler.investigator import investigate
 from knowledge_compiler.observation_evidence import (convert_observations_to_evidence)
 
-def analyze(repository: str, with_ai: bool = False) -> None:
+def analyze(repository: str, with_ai: bool = False, limit: int | None=None) -> None:
     path = Path(repository)
 
     if not path.exists():
@@ -34,9 +34,26 @@ def analyze(repository: str, with_ai: bool = False) -> None:
     if with_ai:
         units = build_investigation_units(context)
         print(f"Created {len(units)} investigation units")
+        
+        units = [
+            unit for unit in units if unit.kind in {"function", "class", "documentation"}
+        ]
+
+        if limit is not None:
+            if limit < 1:
+                print("Error: --limit must be at least 1")
+                return
+
+            units = units[:limit]
+
+        print(f"Created {len(units)} investigation units")
 
         for unit in units:
             result = investigate(unit)
+            print(f"Investigated: {unit.kind} - {unit.name}")
+            print(f"Observations: {len(result.observations)}")
+            for observation in result.observations:
+                print(f"    - {observation}")
             observation_evidence = convert_observations_to_evidence(result)
             all_evidence.extend(observation_evidence)
 
@@ -80,10 +97,17 @@ def main() -> None:
         help="Enable AI investigation using the local Ollama model"
     )
 
+    analyze_parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Maximum number of investigation units to analyze with AI"
+    )
+
     args = parser.parse_args()
 
     if args.command == "analyze":
-        analyze(args.repository,with_ai=args.with_ai)
+        analyze(args.repository,with_ai=args.with_ai, limit=args.limit)
     else:
         parser.print_help()
 

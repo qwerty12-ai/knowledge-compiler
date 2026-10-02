@@ -12,13 +12,6 @@ def investigate(unit: InvestigationUnit,client=None) -> InvestigationResult:
 
     observations = []
 
-    if unit.kind == "function":
-        observations.append(f"The unit defines a function named {unit.name}.")
-    elif unit.kind == "class":
-        observations.append(f"The unit defines a class named {unit.name}.")
-    elif unit.kind == "documentation":
-        observations.append("The unit contains documentation.")
-
     if client is None:
         client = ollama.Client()
 
@@ -30,12 +23,11 @@ def investigate(unit: InvestigationUnit,client=None) -> InvestigationResult:
             {
                 "role": "system",
                 "content": (
-                    "You are a software repository investigator. "
-                    "Analyze the supplied unit and report observations "
-                    "supported by its content. Do not invent behavior, "
-                    "intent, or evidence. If the content is insufficient, "
-                    "return no observations. Return JSON with an "
-                    "'observations' array containing strings."
+                    "You are a software repository investigator."
+                    "Analyze the supplied code unit to identify its purpose, behavior, constraints, side effects, dependencies, or important design decisions."
+                    "Return only observations that are directly supported by the supplied content. Do not merely restate the unit's name or its type. Explain what the code actually does."
+                    "Do not infer developer intent unless the content provides evidence. Do not invent behavior or evidence. If the content does not support a useful observation beyond its name or type, return an empty observations array."
+                    "Return valid JSON with an 'observations' array containing strings."
                 )
             },
             {
@@ -49,7 +41,9 @@ def investigate(unit: InvestigationUnit,client=None) -> InvestigationResult:
             }
         ],
         options={
-            "num_predict": 256
+            "num_predict": 512,
+            "temperature": 0.2,
+            "repeat_penalty": 1.1
         }
     )
 
@@ -58,9 +52,9 @@ def investigate(unit: InvestigationUnit,client=None) -> InvestigationResult:
     except json.JSONDecodeError:
         data = {}
 
-    model_observations = data.get("observations", [])
+    model_observations = (data.get("observations", []) if isinstance(data, dict) else [])
     if(isinstance(data, dict) and isinstance(model_observations, list) and all(isinstance(item,str) for item in model_observations)):
-        observations.extend(model_observations)
+        observations.extend(item.strip() for item in model_observations if item.strip())
 
     return InvestigationResult(
         unit=unit,

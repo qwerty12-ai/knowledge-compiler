@@ -69,7 +69,7 @@ def test_investigate_returns_result_for_unit():
     assert isinstance(result, InvestigationResult)
     assert result.unit == unit
 
-def test_investigate_observes_function_name():
+def test_investigate_does_not_invent_function_observation():
     unit = InvestigationUnit(
         source=Path("src/payments.py"),
         name="process_payment",
@@ -81,11 +81,9 @@ def test_investigate_observes_function_name():
 
     result = investigate(unit, client=FakeOllamaClient())
 
-    assert "The unit defines a function named process_payment." in (
-        result.observations
-    )
+    assert result.observations == ()
 
-def test_investigate_observes_class_name():
+def test_investigate_does_not_invent_class_observation():
     unit = InvestigationUnit(
         source=Path("src/payments.py"),
         name="PaymentProcessor",
@@ -97,13 +95,10 @@ def test_investigate_observes_class_name():
 
     result = investigate(unit, client=FakeOllamaClient())
 
-    assert (
-        "The unit defines a class named PaymentProcessor."
-        in result.observations
-    )
+    assert result.observations == ()
 
 
-def test_investigate_observes_documentation():
+def test_investigate_does_not_invent_documentation_observation():
     unit = InvestigationUnit(
         source=Path("README.md"),
         name="README.md",
@@ -113,14 +108,8 @@ def test_investigate_observes_documentation():
 
     result = investigate(unit, client=FakeOllamaClient())
 
-    assert (
-        "The unit contains documentation."
-        in result.observations
-    )
-
-
-
-
+    assert result.observations == ()
+    
 def test_investigate_uses_model_response():
     unit = InvestigationUnit(
         source=Path("src/math_utils.py"),
@@ -140,7 +129,6 @@ def test_investigate_uses_model_response():
 
     assert result.unit == unit
     assert result.observations == (
-        "The unit defines a function named add.",
         "The function returns the sum of two values.",
     )
     assert client.messages is not None
@@ -161,6 +149,4 @@ def test_investigate_handles_malformed_model_response():
     )
 
     assert result.unit == unit
-    assert result.observations == (
-        "The unit defines a function named process_payment.",
-    )
+    assert result.observations == ()
