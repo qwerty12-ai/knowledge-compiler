@@ -6,7 +6,7 @@ from knowledge_compiler.investigation import build_investigation_units
 from knowledge_compiler.investigator import investigate
 from knowledge_compiler.observation_evidence import (convert_observations_to_evidence)
 
-def analyze(repository: str) -> None:
+def analyze(repository: str, with_ai: bool = False) -> None:
     path = Path(repository)
 
     if not path.exists():
@@ -29,17 +29,16 @@ def analyze(repository: str) -> None:
     for item in context.evidence:
         print(f"Evidence: {item.description}")
 
-    units = build_investigation_units(context)
-
-    print(f"Created {len(units)} investigation units")
-
     all_evidence = list(context.evidence)
 
-    for unit in units:
-        result = investigate(unit)
-        observation_evidence = convert_observations_to_evidence(result)
+    if with_ai:
+        units = build_investigation_units(context)
+        print(f"Created {len(units)} investigation units")
 
-    all_evidence.extend(observation_evidence)
+        for unit in units:
+            result = investigate(unit)
+            observation_evidence = convert_observations_to_evidence(result)
+            all_evidence.extend(observation_evidence)
 
     claims = generate_claims(all_evidence)
 
@@ -75,10 +74,16 @@ def main() -> None:
         help="Path to the repository to analyze"
     )
 
+    analyze_parser.add_argument(
+        "--with-ai",
+        action="store_true",
+        help="Enable AI investigation using the local Ollama model"
+    )
+
     args = parser.parse_args()
 
     if args.command == "analyze":
-        analyze(args.repository)
+        analyze(args.repository,with_ai=args.with_ai)
     else:
         parser.print_help()
 
