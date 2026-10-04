@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from .models import AnalysisRequest
+from .services.analysis import analyze_repository
 
 app = FastAPI(
     title="Knowledge Compiler API",
@@ -36,3 +38,8 @@ def root() -> dict:
 @app.get("/health")
 def health_check() -> dict[str, str]:
     return {"status": "ok"}
+
+@app.post("/api/v1/analyses")
+def create_analysis(request: AnalysisRequest) -> dict:
+    result = analyze_repository(request)
+    return result.to_dict()

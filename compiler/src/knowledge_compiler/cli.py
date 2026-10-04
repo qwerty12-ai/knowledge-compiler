@@ -5,8 +5,9 @@ from knowledge_compiler.context import build_repository_context
 from knowledge_compiler.investigation import build_investigation_units
 from knowledge_compiler.investigator import investigate
 from knowledge_compiler.observation_evidence import (convert_observations_to_evidence)
+from knowledge_compiler.output import build_analysis_result
 
-def analyze(repository: str, with_ai: bool = False, limit: int | None=None) -> None:
+def analyze(repository: str, with_ai: bool = False, limit: int | None=None):
     path = Path(repository)
 
     if not path.exists():
@@ -72,6 +73,17 @@ def analyze(repository: str, with_ai: bool = False, limit: int | None=None) -> N
 
             if item.line_start is not None:
                 print(f"    Lines: {item.line_start} - {item.line_end}")
+
+    result = build_analysis_result(
+        repository=path,
+        files_discovered=len(context.files),
+        evidence=all_evidence,
+        claims=claims,
+        with_ai=with_ai,
+        limit=limit
+    )
+
+    return result
 
 def main() -> None:
     parser = argparse.ArgumentParser(
