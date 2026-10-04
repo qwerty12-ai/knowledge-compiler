@@ -1,5 +1,17 @@
+# Python generated files and caches
 .venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
 *.egg-info/
+
+# Backend environment and secrets
+.env
+.env.*
+!.env.example
+
+# Backend test and tooling caches
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
