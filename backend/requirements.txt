@@ -1,2 +1,4 @@
 fastapi
 uvicorn[standard]
+mysql-connector-python==26.7.0
+python-dotenv==1.2.4
