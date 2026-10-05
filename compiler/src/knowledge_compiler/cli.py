@@ -6,6 +6,7 @@ from knowledge_compiler.investigation import build_investigation_units
 from knowledge_compiler.investigator import investigate
 from knowledge_compiler.observation_evidence import (convert_observations_to_evidence)
 from knowledge_compiler.output import build_analysis_result
+from knowledge_compiler.observation_validation import validate_observations, verify_with_ai
 
 def analyze(repository: str, with_ai: bool = False, limit: int | None=None):
     path = Path(repository)
@@ -31,6 +32,7 @@ def analyze(repository: str, with_ai: bool = False, limit: int | None=None):
         print(f"Evidence: {item.description}")
 
     all_evidence = list(context.evidence)
+    all_validations = []
 
     if with_ai:
         units = build_investigation_units(context)
@@ -55,10 +57,18 @@ def analyze(repository: str, with_ai: bool = False, limit: int | None=None):
             print(f"Observations: {len(result.observations)}")
             for observation in result.observations:
                 print(f"    - {observation}")
+            validations = validate_observations(
+                result=result,
+                independent_evidence=list(context.evidence),
+                verifier=verify_with_ai
+            )
+            all_validations.extend(validations)
+            for validation in validations:
+                print(f"Validation: {validation.status} - "f"{validation.observation}")
             observation_evidence = convert_observations_to_evidence(result)
             all_evidence.extend(observation_evidence)
 
-    claims = generate_claims(all_evidence)
+    claims = generate_claims(all_evidence, validations=all_validations)
 
     print(f"Generated {len(claims)} claims")
 

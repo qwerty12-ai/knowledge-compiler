@@ -131,3 +131,93 @@ def test_unlinked_evidence_does_not_validate_observation():
     validations = validate_observations(result, [documentation])
 
     assert validations[0].status == ValidationStatus.INCONCLUSIVE
+
+def test_supported_observation_returns_supported():
+    result = make_result(
+        ("The function processes payments.",)
+    )
+
+    source_evidence = Evidence(
+        source=Path("payments.py"),
+        kind="file_content",
+        description="Source code for process_payment.",
+        content="""
+def process_payment():
+    process_transaction()
+    return True
+""",
+    )
+
+    def verifier(observations, source_content):
+        return [ValidationStatus.SUPPORTED]
+
+    validations = validate_observations(
+        result,
+        [source_evidence],
+        verifier=verifier,
+    )
+
+    assert validations[0].status == ValidationStatus.SUPPORTED
+    assert validations[0].supporting_evidence == (source_evidence,)
+    assert validations[0].contradicting_evidence == ()
+
+
+def test_contradicted_observation_returns_contradicted():
+    result = make_result(
+        ("The function prevents duplicate payments.",)
+    )
+
+    source_evidence = Evidence(
+        source=Path("payments.py"),
+        kind="file_content",
+        description="Source code for process_payment.",
+        content="""
+def process_payment():
+    create_payment()
+    return True
+""",
+    )
+
+    def verifier(observations, source_content):
+        return [ValidationStatus.CONTRADICTED]
+
+    validations = validate_observations(
+        result,
+        [source_evidence],
+        verifier=verifier,
+    )
+
+    assert validations[0].status == ValidationStatus.CONTRADICTED
+    assert validations[0].supporting_evidence == ()
+    assert validations[0].contradicting_evidence == (source_evidence,)
+
+
+def test_verifier_receives_observation_and_source():
+    result = make_result(
+        ("The function processes payments.",)
+    )
+
+    source_evidence = Evidence(
+        source=Path("payments.py"),
+        kind="file_content",
+        description="Source code for process_payment.",
+        content="def process_payment():\n    return True\n",
+    )
+
+    received = {}
+
+    def verifier(observations, source_content):
+        received["observation"] = observations
+        received["source"] = source_content
+        return [ValidationStatus.SUPPORTED]
+
+    validate_observations(
+        result,
+        [source_evidence],
+        verifier=verifier,
+    )
+
+    assert received["observation"] == (
+        "The function processes payments.",
+    )
+    assert "def process_payment" in received["source"]
