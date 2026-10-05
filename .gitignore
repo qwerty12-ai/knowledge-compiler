@@ -1,17 +1,60 @@
-# Python generated files and caches
+# ==============================
+# Python
+# ==============================
+
 .venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
 *.egg-info/
 
-# Backend environment and secrets
+# ==============================
+# Node / Frontend
+# ==============================
+
+node_modules/
+.next/
+out/
+build/
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# ==============================
+# Environment / Secrets
+# ==============================
+
 .env
 .env.*
 !.env.example
 
-# Backend test and tooling caches
-.coverage
-htmlcov/
+# ==============================
+# Tooling / Caches
+# ==============================
+
 .mypy_cache/
 .ruff_cache/
+
+# ==============================
+# Logs
+# ==============================
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ==============================
+# Vercel
+# ==============================
+
+.vercel/
+
+# ==============================
+# Misc
+# ==============================
+
+.DS_Store
+*.pem
