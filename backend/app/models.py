@@ -10,3 +10,7 @@ class AnalysisRequest(BaseModel):
         ge=1,
         description="Optional maximum number of files to analyze."
     )
+    with_ai: bool = Field(
+        default=False,
+        description="Whether AI-powered repository investigation should be enabled."
+    )

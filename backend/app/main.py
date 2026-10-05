@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from .models import AnalysisRequest
 from .services.analysis import analyze_repository
+from .queue import get_analysis_queue
+import uuid
+from .services.redis_inspector import inspect_analysis_state, inspect_analysis_queue, inspect_analysis_channel
 
 app = FastAPI(
     title="Knowledge Compiler API",
@@ -40,6 +43,33 @@ def health_check() -> dict[str, str]:
     return {"status": "ok"}
 
 @app.post("/api/v1/analyses")
-def create_analysis(request: AnalysisRequest) -> dict:
-    result = analyze_repository(request)
-    return result.to_dict()
+async def create_analysis(request: AnalysisRequest) -> dict:
+    analysis_id = str(uuid.uuid4())
+    queue = get_analysis_queue()
+    job = await queue.add(
+        "analyze-repository",
+        {
+            "repository_path": request.repository_path,
+            "analysis_id": analysis_id,
+            "limit": request.limit,
+            "with_ai": request.with_ai 
+        }
+    )
+
+    return {
+        "analysis_id": analysis_id,
+        "job_id": job.id,
+        "status": "queued"
+    }
+
+@app.get("/api/v1/redis/inspector/{analysis_id}")
+async def inspect_redis(analysis_id: str) -> dict:
+    state = inspect_analysis_state(analysis_id)
+    queue = await inspect_analysis_queue()
+    channel = inspect_analysis_channel()
+
+    return {
+        "state": state,
+        "queue": queue,
+        "channel": channel
+    }

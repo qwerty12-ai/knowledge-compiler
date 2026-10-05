@@ -5,6 +5,7 @@ from ..models import AnalysisRequest
 def analyze_repository(request: AnalysisRequest):
     result = run_analysis(
         repository=request.repository_path,
+        with_ai=request.with_ai,
         limit=request.limit
     )
     persist_analysis(result)

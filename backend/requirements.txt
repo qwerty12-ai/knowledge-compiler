@@ -2,3 +2,6 @@ fastapi
 uvicorn[standard]
 mysql-connector-python==26.7.0
 python-dotenv==1.2.4
+pytest-asyncio==1.4.0
+redis==7.4.1
+bullmq==3.3.0
