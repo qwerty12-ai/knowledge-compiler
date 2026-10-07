@@ -29,6 +29,7 @@ def test_convert_observations_to_evidence():
     assert evidence[0].content == unit.content
     assert evidence[0].line_start == 1
     assert evidence[0].line_end == 2
+    assert evidence[0].unit_id == result.unit.unit_id
 
 
 def test_convert_empty_observations():

@@ -10,10 +10,12 @@ def convert_observations_to_evidence(result: InvestigationResult) -> list[Eviden
                 source=result.unit.source,
                 kind="ai_observation",
                 description=observation,
+                origin="ai",
                 language=result.unit.source.suffix.lstrip(".") or None,
                 content=result.unit.content,
                 line_start=result.unit.line_start,
-                line_end=result.unit.line_end
+                line_end=result.unit.line_end,
+                unit_id=result.unit.unit_id
             )
         )
 

@@ -48,7 +48,7 @@ def test_build_investigation_units_extracts_functions(tmp_path: Path):
     unit = units[0]
     assert unit.name == "execute_payment"
     assert unit.kind == "function"
-    assert unit.source == source_file
+    assert unit.source == Path("payment.py")
     assert unit.content == (
         "def execute_payment():\n"
         "    return True"
@@ -102,3 +102,17 @@ def test_build_investigation_units_includes_documentation(
     assert len(documentation_units) == 1
     assert documentation_units[0].name == "README.md"
     assert documentation_units[0].content == "# Payment Service\n"
+
+def test_investigation_unit_has_stable_identity():
+    unit = InvestigationUnit(
+        source=Path("payments.py"),
+        name="process_payment",
+        kind="function",
+        content="return True",
+        line_start=10,
+        line_end=12,
+    )
+
+    assert unit.unit_id == (
+        "payments.py:function:10:12:process_payment"
+    )

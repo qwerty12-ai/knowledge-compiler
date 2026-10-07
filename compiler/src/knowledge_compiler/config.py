@@ -1,0 +1,1 @@
+AI_MODEL = "qwen3:4b"

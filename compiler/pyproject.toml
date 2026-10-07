@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "knowledge-compiler"
 version = "0.1.0"
-description = "An evidence-backed enigneering knowledge compiler for software repositories."
+description = "An evidence-backed engineering knowledge compiler for software repositories."
 readme = "README.md"
 requires-python = ">=3.14"
 license = {text = "MIT"}

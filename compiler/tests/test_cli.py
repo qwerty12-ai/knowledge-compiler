@@ -9,21 +9,18 @@ def fake_investigate(unit):
 
 def test_analyze_existing_repository(capsys, monkeypatch):
     monkeypatch.setattr(
-        "knowledge_compiler.cli.investigate",
+        "knowledge_compiler.pipeline.investigate",
         fake_investigate
     )
 
-    analyze(".")
+    result = analyze(".")
 
-    captured = capsys.readouterr()
-
-    assert "Analyzing repository:" in captured.out
-    assert "Generated" in captured.out
-    assert "Claim:" in captured.out
+    assert result is not None
+    assert result.files_discovered > 0
+    assert len(result.claims) > 0
 
 def test_analyze_missing_repository(capsys):
-    analyze("./does-not-exist")
+    import pytest
 
-    captured = capsys.readouterr()
-    
-    assert "repository does not exist" in captured.out
+    with pytest.raises(ValueError, match="repository does not exist"):
+        analyze("./does-not-exist")

@@ -41,15 +41,18 @@ def test_build_repository_context_from_repository(tmp_path: Path):
     context = build_repository_context(tmp_path)
 
     assert len(context.files) == 2
-    assert len(context.evidence) == 2
+    assert len(context.evidence) == 3
 
     assert any(
-        file.path == Path("payment.py")
-        for file in context.files
+        evidence.kind == "function"
+        and evidence.source == Path("payment.py")
+        and evidence.line_start == 1
+        and evidence.line_end == 2
+        for evidence in context.evidence
     )
 
     assert any(
-        evidence.source == readme_file
+        evidence.source == Path("README.md")
         for evidence in context.evidence
     )
 

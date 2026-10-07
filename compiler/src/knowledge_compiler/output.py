@@ -9,6 +9,7 @@ class EvidenceOutput:
     source: str
     kind: str
     description: str
+    origin: str
     language: str | None
     line_start: int | None
     line_end: int | None
@@ -61,6 +62,7 @@ def build_analysis_result(
                 source=str(item.source),
                 kind=item.kind,
                 description=item.description,
+                origin=item.origin,
                 language=item.language,
                 line_start=item.line_start,
                 line_end=item.line_end,
@@ -72,7 +74,7 @@ def build_analysis_result(
 
     for index, claim in enumerate(claims, start=1):
         claim_evidence_ids = tuple(
-            evidence_ids_by_object[id(item)] for item in claim.evidence if id(item) in evidence_ids_by_object
+            evidence_ids_by_object[id(item)] for item in claim.evidence
         )
 
         claim_outputs.append(

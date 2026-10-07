@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from knowledge_compiler.models import Claim, Evidence
+from knowledge_compiler.models import Claim, Evidence, Observation
 
 def test_claim_can_be_created():
     evidence = Evidence(
@@ -51,3 +51,15 @@ def test_claim_rejects_negative_confidence():
             confidence=-0.1,
             status="SUPPORTED",
         )
+
+def test_observation_has_identity():
+    observation = Observation(
+        unit_id="payments.py:function:1:2:process_payment",
+        statement="The function returns True.",
+        source=Path("payments.py"),
+        line_start=1,
+        line_end=2
+    )
+
+    assert observation.unit_id == "payments.py:function:1:2:process_payment"
+    assert observation.statement == "The function returns True."

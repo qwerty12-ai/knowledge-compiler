@@ -1,12 +1,12 @@
 from pathlib import Path
 
+from knowledge_compiler.investigation import InvestigationUnit
 from knowledge_compiler.investigator import InvestigationResult
-from knowledge_compiler.models import Evidence
+from knowledge_compiler.models import Evidence, Observation
 from knowledge_compiler.observation_validation import (
     ValidationStatus,
     validate_observations,
 )
-from knowledge_compiler.investigation import InvestigationUnit
 
 
 def make_result(
@@ -23,7 +23,16 @@ def make_result(
 
     return InvestigationResult(
         unit=unit,
-        observations=observations,
+        observations=tuple(
+            Observation(
+                unit_id=unit.unit_id,
+                statement=observation,
+                source=unit.source,
+                line_start=unit.line_start,
+                line_end=unit.line_end,
+            )
+            for observation in observations
+        ),
     )
 
 
@@ -77,15 +86,21 @@ def test_unmatched_independent_evidence_is_inconclusive():
 
 
 def test_validation_result_preserves_observation():
-    observation = "The function prevents duplicate payments."
-    result = make_result((observation,))
+    result = make_result(
+        ("The function prevents duplicate payments.",)
+    )
 
     validations = validate_observations(result, [])
 
-    assert validations[0].observation == observation
+    assert validations[0].observation.statement == (
+        "The function prevents duplicate payments."
+    )
+
 
 def test_ai_evidence_is_not_independent():
-    result = make_result(("The function prevents duplicate payments.",))
+    result = make_result(
+        ("The function prevents duplicate payments.",)
+    )
 
     ai_evidence = Evidence(
         source=Path("payments.py"),
@@ -99,7 +114,9 @@ def test_ai_evidence_is_not_independent():
 
 
 def test_linked_evidence_does_not_automatically_prove_claim():
-    result = make_result(("The function prevents duplicate payments.",))
+    result = make_result(
+        ("The function prevents duplicate payments.",)
+    )
 
     source_evidence = Evidence(
         source=Path("payments.py"),
@@ -120,7 +137,9 @@ def test_linked_evidence_does_not_automatically_prove_claim():
 
 
 def test_unlinked_evidence_does_not_validate_observation():
-    result = make_result(("The project uses Flask.",))
+    result = make_result(
+        ("The project uses Flask.",)
+    )
 
     documentation = Evidence(
         source=Path("README.md"),
@@ -131,6 +150,7 @@ def test_unlinked_evidence_does_not_validate_observation():
     validations = validate_observations(result, [documentation])
 
     assert validations[0].status == ValidationStatus.INCONCLUSIVE
+
 
 def test_supported_observation_returns_supported():
     result = make_result(
@@ -149,6 +169,9 @@ def process_payment():
     )
 
     def verifier(observations, source_content):
+        assert observations == (
+            "The function processes payments.",
+        )
         return [ValidationStatus.SUPPORTED]
 
     validations = validate_observations(
@@ -221,3 +244,13 @@ def test_verifier_receives_observation_and_source():
         "The function processes payments.",
     )
     assert "def process_payment" in received["source"]
+
+
+def test_validation_result_preserves_unit_id():
+    result = make_result(
+        ("The function prevents duplicate payments.",)
+    )
+
+    validations = validate_observations(result, [])
+
+    assert validations[0].unit_id == result.unit.unit_id

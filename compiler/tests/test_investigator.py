@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from knowledge_compiler.investigation import InvestigationUnit
 from knowledge_compiler.investigator import InvestigationResult, investigate
+from knowledge_compiler.models import Observation
 
 class FakeMessage:
     def __init__(self, content):
@@ -129,7 +130,13 @@ def test_investigate_uses_model_response():
 
     assert result.unit == unit
     assert result.observations == (
-        "The function returns the sum of two values.",
+        Observation(
+            unit_id="src/math_utils.py:function:1:2:add",
+            statement="The function returns the sum of two values.",
+            source=Path("src/math_utils.py"),
+            line_start=1,
+            line_end=2
+        ),
     )
     assert client.messages is not None
 

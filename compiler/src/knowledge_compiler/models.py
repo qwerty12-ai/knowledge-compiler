@@ -1,3 +1,4 @@
+from enum import Enum
 from knowledge_compiler.structure import CodeStructure
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,17 +16,35 @@ class Evidence:
     source: Path
     kind: str
     description: str
+    origin: str = "deterministic"
     language: str | None = None
     content: str | None = None
     line_start: int | None = None
     line_end: int | None = None
+    unit_id: str | None = None
+
+@dataclass(frozen=True)
+class Observation:
+    unit_id: str
+    statement: str
+    source: Path
+    line_start: int | None = None
+    line_end: int | None = None
+
+class ClaimStatus(str, Enum):
+    VERIFIED = "VERIFIED"
+    SUPPORTED = "SUPPORTED"
+    WEAKLY_SUPPORTED = "WEAKLY_SUPPORTED"
+    UNKNOWN = "UNKNOWN"
+    CONTRADICTED = "CONTRADICTED"
+    STALE = "STALE"
 
 @dataclass(frozen=True)
 class Claim:
     statement: str
     evidence: tuple[Evidence, ...]
     confidence: float
-    status: str
+    status: ClaimStatus
 
     def __post_init__(self):
         if not 0.0 <= self.confidence <= 1.0:

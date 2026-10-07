@@ -1,8 +1,9 @@
 from pathlib import Path
 from knowledge_compiler.models import Evidence
 from knowledge_compiler.discovery import detect_language
+from knowledge_compiler.source_lines import split_source_lines
 
-def extract_evidence(file_path: Path) -> list[Evidence]:
+def extract_evidence(file_path: Path, repository_root: Path) -> list[Evidence]:
     try:
         content = file_path.read_text(encoding="utf-8")
     except (UnicodeDecodeError, OSError):
@@ -22,12 +23,16 @@ def extract_evidence(file_path: Path) -> list[Evidence]:
     else:
         kind = "file_content"
 
+    lines = split_source_lines(content)
+
     return [
         Evidence(
-            source=file_path,
+            source=file_path.relative_to(repository_root),
             kind=kind,
-            description=f"File contains {len(content.splitlines())} lines of source code.",
+            description=f"File contains {len(lines)} lines of content.",
             language=detect_language(file_path),
-            content=content
+            content=content,
+            line_start=1,
+            line_end=len(lines)
         )
     ]

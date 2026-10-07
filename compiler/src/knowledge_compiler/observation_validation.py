@@ -3,96 +3,127 @@ from enum import Enum
 from typing import Callable
 
 from knowledge_compiler.investigator import InvestigationResult
-from knowledge_compiler.models import Evidence
+from knowledge_compiler.models import Evidence, Observation
+from knowledge_compiler.config import AI_MODEL
+
 
 class ValidationStatus(str, Enum):
     SUPPORTED = "SUPPORTED"
     CONTRADICTED = "CONTRADICTED"
     INCONCLUSIVE = "INCONCLUSIVE"
 
+
 @dataclass(frozen=True)
 class ObservationValidation:
-    observation: str
+    unit_id: str
+    observation: Observation
     status: ValidationStatus
     supporting_evidence: tuple[Evidence, ...] = ()
     contradicting_evidence: tuple[Evidence, ...] = ()
 
+
 def validate_observations(
-    result: InvestigationResult, 
-    independent_evidence: list[Evidence], 
-    evidence_links: dict[str, list[Evidence]] | None=None,
-    verifier: Callable[[tuple[str,...], str],list[ValidationStatus]] | None = None
+    result: InvestigationResult,
+    independent_evidence: list[Evidence],
+    evidence_links: dict[str, list[Evidence]] | None = None,
+    verifier: Callable[
+        [tuple[str, ...], str],
+        list[ValidationStatus],
+    ] | None = None,
 ) -> list[ObservationValidation]:
-    
+
     evidence_links = evidence_links or {}
-    
+
     independent_evidence = [
-        item for item in independent_evidence if item.kind != "ai_observation"
+        item
+        for item in independent_evidence
+        if item.kind != "ai_observation"
     ]
 
     if not result.observations:
         return []
 
     source_evidence = [
-        item for item in independent_evidence if item.source == result.unit.source
+        item
+        for item in independent_evidence
+        if item.source == result.unit.source
     ]
 
     if not source_evidence or verifier is None:
         return [
             ObservationValidation(
+                unit_id=result.unit.unit_id,
                 observation=observation,
-                status=ValidationStatus.INCONCLUSIVE
+                status=ValidationStatus.INCONCLUSIVE,
             )
             for observation in result.observations
         ]
 
     source_content = "\n".join(
-        item.content or item.description for item in source_evidence
+        item.content or item.description
+        for item in source_evidence
     )
 
     statuses = verifier(
-        result.observations,
-        source_content
+        tuple(
+            observation.statement
+            for observation in result.observations
+        ),
+        source_content,
     )
 
     if len(statuses) != len(result.observations):
-        raise ValueError("Verifier returned a different number of results ""than observations.")
+        raise ValueError(
+            "Verifier returned a different number of results "
+            "than observations."
+        )
 
     validations = []
 
     for observation, status in zip(
         result.observations,
-        statuses
+        statuses,
     ):
-        linked_evidence = evidence_links.get(observation,source_evidence)
+        linked_evidence = evidence_links.get(
+            observation.statement,
+            source_evidence,
+        )
 
         supporting = ()
         contradicting = ()
 
         if status == ValidationStatus.SUPPORTED:
             supporting = tuple(linked_evidence)
+
         elif status == ValidationStatus.CONTRADICTED:
             contradicting = tuple(linked_evidence)
 
         validations.append(
             ObservationValidation(
+                unit_id=result.unit.unit_id,
                 observation=observation,
                 status=status,
                 supporting_evidence=supporting,
-                contradicting_evidence=contradicting
+                contradicting_evidence=contradicting,
             )
         )
 
     return validations
-        
 
-def verify_with_ai(observations: tuple[str,...], source_content: str) -> list[ValidationStatus]:
+
+def verify_with_ai(
+    observations: tuple[str, ...],
+    source_content: str,
+) -> list[ValidationStatus]:
+
     from ollama import Client
+    import json
 
     client = Client()
 
     formatted_observations = "\n".join(
-        f"{index + 1}. {observation}" for index, observation in enumerate(observations)
+        f"{index + 1}. {observation}"
+        for index, observation in enumerate(observations)
     )
 
     prompt = f"""
@@ -134,33 +165,70 @@ Rules:
 - Do not assume behavior that is not visible in the source.
 """
 
-    response = client.chat(
-        model="qwen3:4b",
-        think=False,
-        format="json",
-        options = {
-            "temperature": 0.0,
-            "num_predict": 200
-        },
-        messages = [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ]
-    )
+    try:
+        response = client.chat(
+            model=AI_MODEL,
+            think=False,
+            format="json",
+            options={
+                "temperature": 0.0,
+                "num_predict": 200,
+            },
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+        )
 
-    import json
+        data = json.loads(response["message"].content)
 
-    data = json.loads(response["message"].content)
+        if not isinstance(data, dict):
+            return [
+                ValidationStatus.INCONCLUSIVE
+                for _ in observations
+            ]
 
-    results = data.get("results", [])
+        results = data.get("results", [])
 
-    if len(results) != len(observations):
+        if not isinstance(results, list):
+            return [
+                ValidationStatus.INCONCLUSIVE
+                for _ in observations
+            ]
+
+        if len(results) != len(observations):
+            return [
+                ValidationStatus.INCONCLUSIVE
+                for _ in observations
+            ]
+
+        statuses = []
+
+        for item in results:
+            if not isinstance(item, dict):
+                return [
+                    ValidationStatus.INCONCLUSIVE
+                    for _ in observations
+                ]
+
+            status = item.get("status")
+
+            try:
+                statuses.append(
+                    ValidationStatus(status)
+                )
+            except (ValueError, TypeError):
+                return [
+                    ValidationStatus.INCONCLUSIVE
+                    for _ in observations
+                ]
+
+        return statuses
+
+    except Exception:
         return [
-            ValidationStatus.INCONCLUSIVE for _ in observations
+            ValidationStatus.INCONCLUSIVE
+            for _ in observations
         ]
-
-    return [
-        ValidationStatus(item["status"]) for item in data["results"]
-    ]

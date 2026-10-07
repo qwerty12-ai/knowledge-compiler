@@ -25,13 +25,14 @@ class CodeImport:
 
 @dataclass(frozen=True)
 class CodeStructure:
+    source: Path
     functions: tuple[CodeFunction,...]
     classes: tuple[CodeClass,...]
     imports: tuple[CodeImport,...]
 
 class StructureVisitor(ast.NodeVisitor):
-    def __init__(self, file_path: Path):
-        self.file_path = file_path
+    def __init__(self, file_path: Path, source_path: Path):
+        self.file_path = source_path
         self.functions = []
         self.classes = []
         self.imports = []
@@ -100,14 +101,15 @@ class StructureVisitor(ast.NodeVisitor):
 
         self.generic_visit(node)
 
-def extract_structure(file_path: Path) -> CodeStructure:
+def extract_structure(file_path: Path, source_path: Path) -> CodeStructure:
     source = file_path.read_text(encoding="utf-8")
     tree = ast.parse(source)
 
-    visitor = StructureVisitor(file_path)
+    visitor = StructureVisitor(file_path, source_path)
     visitor.visit(tree)
 
     return CodeStructure(
+        source=source_path,
         functions=tuple(visitor.functions), 
         classes=tuple(visitor.classes),
         imports=tuple(visitor.imports)

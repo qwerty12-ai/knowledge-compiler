@@ -1,15 +1,31 @@
 from pathlib import Path
 
 from knowledge_compiler.claims import generate_claims
-from knowledge_compiler.models import Evidence
+from knowledge_compiler.models import Evidence, ClaimStatus, Observation
+from knowledge_compiler.observation_validation import (
+    ObservationValidation,
+    ValidationStatus,
+)
+
+
+def make_observation(
+    statement: str,
+    unit_id: str = "payments.py:function:1:2:process_payment",
+) -> Observation:
+    return Observation(
+        unit_id=unit_id,
+        statement=statement,
+        source=Path("payments.py"),
+        line_start=1,
+        line_end=2,
+    )
 
 
 def test_generate_claim_from_file_content(tmp_path: Path):
     file_path = tmp_path / "example.py"
-    file_path.write_text("print('hello')\n")
 
     evidence = Evidence(
-        source=file_path,
+        source=Path("example.py"),
         kind="file_content",
         description="File contains 1 lines of source code.",
     )
@@ -21,13 +37,12 @@ def test_generate_claim_from_file_content(tmp_path: Path):
         "The repository contains source code in example.py."
     )
     assert claims[0].evidence == (evidence,)
-    assert claims[0].confidence == 0.6
-    assert claims[0].status == "SUPPORTED"
+    assert claims[0].confidence == 1.0
+    assert claims[0].status == ClaimStatus.VERIFIED
 
 
 def test_generate_claim_from_documentation(tmp_path: Path):
     file_path = tmp_path / "README.md"
-    file_path.write_text("# Knowledge Compiler\n")
 
     evidence = Evidence(
         source=file_path,
@@ -40,8 +55,8 @@ def test_generate_claim_from_documentation(tmp_path: Path):
     assert len(claims) == 1
     assert claims[0].statement == "The repository contains documentation."
     assert claims[0].evidence == (evidence,)
-    assert claims[0].confidence == 0.6
-    assert claims[0].status == "SUPPORTED"
+    assert claims[0].confidence == 1.0
+    assert claims[0].status == ClaimStatus.VERIFIED
 
 
 def test_generate_claims_from_empty_evidence():
@@ -59,6 +74,7 @@ def test_generate_claims_ignores_unknown_evidence(tmp_path: Path):
 
     assert generate_claims([evidence]) == []
 
+
 def test_generate_claim_for_repository_with_tests(tmp_path: Path):
     test_file = tmp_path / "test_payment.py"
 
@@ -66,7 +82,7 @@ def test_generate_claim_for_repository_with_tests(tmp_path: Path):
         source=test_file,
         kind="test",
         description="File contains 10 lines of source code.",
-        language="Python"
+        language="Python",
     )
 
     claims = generate_claims([evidence])
@@ -74,7 +90,8 @@ def test_generate_claim_for_repository_with_tests(tmp_path: Path):
     assert len(claims) == 1
     assert claims[0].statement == "The repository contains automated tests."
     assert claims[0].evidence == (evidence,)
-    assert claims[0].status == "SUPPORTED"
+    assert claims[0].status == ClaimStatus.VERIFIED
+
 
 def test_generate_claims_aggregates_evidence_for_same_statement(
     tmp_path: Path,
@@ -88,6 +105,7 @@ def test_generate_claims_aggregates_evidence_for_same_statement(
         description="Payment tests.",
         language="Python",
     )
+
     second_evidence = Evidence(
         source=second_file,
         kind="test",
@@ -95,15 +113,20 @@ def test_generate_claims_aggregates_evidence_for_same_statement(
         language="Python",
     )
 
-    claims = generate_claims([first_evidence, second_evidence])
+    claims = generate_claims(
+        [first_evidence, second_evidence]
+    )
 
     assert len(claims) == 1
     assert claims[0].statement == (
         "The repository contains automated tests."
     )
-    assert claims[0].evidence == (first_evidence, second_evidence)
-    assert claims[0].confidence == 0.8
-    assert claims[0].status == "SUPPORTED"
+    assert claims[0].evidence == (
+        first_evidence,
+        second_evidence,
+    )
+    assert claims[0].confidence == 1.0
+    assert claims[0].status == ClaimStatus.VERIFIED
 
 
 def test_generate_claims_keeps_different_statements_separate(
@@ -114,23 +137,29 @@ def test_generate_claims_keeps_different_statements_separate(
         kind="documentation",
         description="Repository documentation.",
     )
+
     tests = Evidence(
         source=tmp_path / "test_app.py",
         kind="test",
         description="Application tests.",
     )
 
-    claims = generate_claims([documentation, tests])
+    claims = generate_claims(
+        [documentation, tests]
+    )
 
     assert len(claims) == 2
+
     assert claims[0].statement == (
         "The repository contains documentation."
     )
+
     assert claims[1].statement == (
         "The repository contains automated tests."
     )
 
-def test_generate_claims_from_ai_observation():
+
+def test_ai_observation_alone_does_not_create_claim():
     evidence = [
         Evidence(
             source=Path("payments.py"),
@@ -139,37 +168,145 @@ def test_generate_claims_from_ai_observation():
             content="def process_payment():\n    return True",
             line_start=1,
             line_end=2,
+            origin="ai",
         )
     ]
 
     claims = generate_claims(evidence)
 
-    assert len(claims) == 1
-    assert claims[0].statement == "The function returns True."
-    assert claims[0].evidence == tuple(evidence)
-    assert claims[0].evidence[0].line_start == 1
-    assert claims[0].status == "UNKNOWN"
+    assert claims == []
 
 
-def test_generate_claims_aggregates_identical_ai_observations():
+def test_ai_observation_is_not_aggregated_as_evidence():
     evidence = [
         Evidence(
             source=Path("payments.py"),
             kind="ai_observation",
             description="The function returns True.",
+            origin="ai",
         ),
         Evidence(
             source=Path("refunds.py"),
             kind="ai_observation",
             description="The function returns True.",
+            origin="ai",
         ),
     ]
 
     claims = generate_claims(evidence)
 
+    assert claims == []
+
+
+def test_generate_claim_from_dependency(tmp_path: Path):
+    file_path = tmp_path / "requirements.txt"
+
+    evidence = Evidence(
+        source=file_path,
+        kind="dependency",
+        description="Repository dependency declaration.",
+    )
+
+    claims = generate_claims([evidence])
+
     assert len(claims) == 1
-    assert len(claims[0].evidence) == 2
-    assert {item.source for item in claims[0].evidence} == {
-        Path("payments.py"),
-        Path("refunds.py"),
-    }
+    assert claims[0].statement == (
+        "The repository declares dependencies in requirements.txt."
+    )
+    assert claims[0].evidence == (evidence,)
+    assert claims[0].status == ClaimStatus.VERIFIED
+
+
+def test_claims_status_includes_stale():
+    assert ClaimStatus.STALE.value == "STALE"
+
+
+def test_ai_observation_cannot_be_verified():
+    observation = make_observation(
+        "The function validates payments."
+    )
+
+    validation = ObservationValidation(
+        unit_id=observation.unit_id,
+        observation=observation,
+        status=ValidationStatus.INCONCLUSIVE,
+    )
+
+    claims = generate_claims(
+        [],
+        validations=[validation],
+    )
+
+    assert len(claims) == 1
+    assert claims[0].status == ClaimStatus.UNKNOWN
+    assert claims[0].statement == (
+        "The function validates payments."
+    )
+
+
+def test_ai_observation_supported_by_deterministic_evidence():
+    observation = make_observation(
+        "The function returns True."
+    )
+
+    deterministic_evidence = Evidence(
+        source=Path("payments.py"),
+        kind="function",
+        description="Function 'process_payment' is defined.",
+        origin="deterministic",
+    )
+
+    validation = ObservationValidation(
+        unit_id=observation.unit_id,
+        observation=observation,
+        status=ValidationStatus.SUPPORTED,
+        supporting_evidence=(deterministic_evidence,),
+    )
+
+    claims = generate_claims(
+        [],
+        validations=[validation],
+    )
+
+    assert len(claims) == 1
+    assert claims[0].statement == (
+        "The function returns True."
+    )
+    assert claims[0].status == ClaimStatus.SUPPORTED
+    assert claims[0].evidence == (
+        deterministic_evidence,
+    )
+
+
+def test_ai_observation_contradicted_by_deterministic_evidence():
+    observation = make_observation(
+        "The function returns True."
+    )
+
+    deterministic_evidence = Evidence(
+        source=Path("payments.py"),
+        kind="function",
+        description="Function 'process_payment' returns False.",
+        origin="deterministic",
+    )
+
+    validation = ObservationValidation(
+        unit_id=observation.unit_id,
+        observation=observation,
+        status=ValidationStatus.CONTRADICTED,
+        contradicting_evidence=(deterministic_evidence,),
+    )
+
+    claims = generate_claims(
+        [],
+        validations=[validation],
+    )
+
+    assert len(claims) == 1
+    assert claims[0].statement == (
+        "The function returns True."
+    )
+    assert claims[0].status == ClaimStatus.CONTRADICTED
+    assert claims[0].evidence == (
+        deterministic_evidence,
+    )

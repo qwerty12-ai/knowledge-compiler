@@ -1,137 +1,116 @@
 import argparse
-from pathlib import Path
-from knowledge_compiler.claims import generate_claims
-from knowledge_compiler.context import build_repository_context
-from knowledge_compiler.investigation import build_investigation_units
-from knowledge_compiler.investigator import investigate
-from knowledge_compiler.observation_evidence import (convert_observations_to_evidence)
-from knowledge_compiler.output import build_analysis_result
-from knowledge_compiler.observation_validation import validate_observations, verify_with_ai
+import json
 
-def analyze(repository: str, with_ai: bool = False, limit: int | None=None):
-    path = Path(repository)
+from knowledge_compiler.pipeline import compile_repository
 
-    if not path.exists():
-        print(f"Error: repository does not exist: {path}")
-        return
 
-    if not path.is_dir():
-        print(f"Error: repository is not a directory: {path}")
-        return
+def print_human_result(result) -> None:
+    print(f"Analyzing repository: {result.repository}")
+    print(f"Discovered {result.files_discovered} files")
 
-    print(f"Analyzing repository: {path.resolve()}")
-
-    context = build_repository_context(path)
-
-    print(f"Discovered {len(context.files)} files")
-
-    for file in context.files:
-        print(f"{file.path}")   
-
-    for item in context.evidence:
+    for item in result.evidence:
         print(f"Evidence: {item.description}")
 
-    all_evidence = list(context.evidence)
-    all_validations = []
+    print(f"Generated {len(result.claims)} claims")
 
-    if with_ai:
-        units = build_investigation_units(context)
-        print(f"Created {len(units)} investigation units")
-        
-        units = [
-            unit for unit in units if unit.kind in {"function", "class", "documentation"}
-        ]
-
-        if limit is not None:
-            if limit < 1:
-                print("Error: --limit must be at least 1")
-                return
-
-            units = units[:limit]
-
-        print(f"Created {len(units)} investigation units")
-
-        for unit in units:
-            result = investigate(unit)
-            print(f"Investigated: {unit.kind} - {unit.name}")
-            print(f"Observations: {len(result.observations)}")
-            for observation in result.observations:
-                print(f"    - {observation}")
-            validations = validate_observations(
-                result=result,
-                independent_evidence=list(context.evidence),
-                verifier=verify_with_ai
-            )
-            all_validations.extend(validations)
-            for validation in validations:
-                print(f"Validation: {validation.status} - "f"{validation.observation}")
-            observation_evidence = convert_observations_to_evidence(result)
-            all_evidence.extend(observation_evidence)
-
-    claims = generate_claims(all_evidence, validations=all_validations)
-
-    print(f"Generated {len(claims)} claims")
-
-    for claim in claims:
+    for claim in result.claims:
         print(f"Claim: {claim.statement}")
         print(f"Status: {claim.status}")
         print(f"Confidence: {claim.confidence:.2f}")
 
-        for item in claim.evidence:
-            print(f"    Source: {item.source}")
-            print(f"    Evidence type: {item.kind}")
+        for evidence_id in claim.evidence_ids:
+            print(f"    Evidence: {evidence_id}")
 
-            if item.line_start is not None:
-                print(f"    Lines: {item.line_start} - {item.line_end}")
+    if result.errors:
+        print("\nErrors:")
+        for error in result.errors:
+            print(f"    - {error}")
 
-    result = build_analysis_result(
-        repository=path,
-        files_discovered=len(context.files),
-        evidence=all_evidence,
-        claims=claims,
+
+def analyze(
+    repository: str,
+    with_ai: bool = False,
+    limit: int | None = None,
+):
+    return compile_repository(
+        repository=repository,
         with_ai=with_ai,
-        limit=limit
+        limit=limit,
     )
 
-    return result
 
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="knowledge-compiler",
-        description="Analyze a software repository and build engineering knowledge"
+        description="Analyze a software repository and build engineering knowledge",
     )
 
     subparsers = parser.add_subparsers(dest="command")
 
     analyze_parser = subparsers.add_parser(
         "analyze",
-        help="Analyze a repository"
+        help="Analyze a repository",
     )
 
     analyze_parser.add_argument(
         "repository",
-        help="Path to the repository to analyze"
+        help="Path to the repository to analyze",
     )
 
     analyze_parser.add_argument(
         "--with-ai",
         action="store_true",
-        help="Enable AI investigation using the local Ollama model"
+        help="Enable AI investigation using the local Ollama model",
     )
 
     analyze_parser.add_argument(
         "--limit",
         type=int,
         default=None,
-        help="Maximum number of investigation units to analyze with AI"
+        help="Maximum number of investigation units to analyze with AI",
+    )
+
+    analyze_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output the analysis result as JSON",
+    )
+
+    analyze_parser.add_argument(
+        "--output",
+        type=str,
+        default=None,
+        help="Write the analysis result to a JSON file",
     )
 
     args = parser.parse_args()
 
-    if args.command == "analyze":
-        analyze(args.repository,with_ai=args.with_ai, limit=args.limit)
-    else:
+    if args.command != "analyze":
         parser.print_help()
+        return
+
+    try:
+        result = compile_repository(
+            repository=args.repository,
+            with_ai=args.with_ai,
+            limit=args.limit,
+        )
+    except ValueError as error:
+        parser.error(str(error))
+        return
+
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as file:
+            file.write(result.to_json())
+        print(f"Analysis written to {args.output}")
+        return
+
+    if args.json:
+        print(result.to_json())
+        return
+
+    print_human_result(result)
+
 
 if __name__ == "__main__":
     main()

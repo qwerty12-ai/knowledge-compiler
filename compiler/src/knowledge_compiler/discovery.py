@@ -7,10 +7,17 @@ IGNORED_DIRECTORIES = {
     "venv",
     "__pycache__",
     ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
     "node_modules",
+    ".next",
+    "out",
+    "coverage",
     "dist",
     "build"
 }
+
+MAX_FILES_SIZE_BYTES = 1_000_000
 
 LANGUAGE_BY_EXTENSION = {
     ".py": "Python",
@@ -54,7 +61,15 @@ def discover_files(repository: Path) -> list[DiscoveredFile]:
         if not path.is_file():
             continue
 
+        if path.is_symlink():
+            continue
+
         if any(part in IGNORED_DIRECTORIES or part.endswith(".egg-info") for part in path.parts):
+            continue
+
+        size_bytes = path.stat().st_size
+
+        if size_bytes > MAX_FILES_SIZE_BYTES:
             continue
 
         files.append(
@@ -62,7 +77,7 @@ def discover_files(repository: Path) -> list[DiscoveredFile]:
                 path=path.relative_to(repository),
                 extension=path.suffix.lower(),
                 language=detect_language(path),
-                size_bytes=path.stat().st_size,
+                size_bytes=size_bytes,
                 category=detect_category(path)
             )
         )
