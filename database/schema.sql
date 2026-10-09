@@ -21,7 +21,7 @@ CREATE TABLE evidence (
     language VARCHAR(50) NULL,
     line_start INT UNSIGNED NULL,
     line_end INT UNSIGNED NULL,
-    content TEXT NULL,
+    content MEDIUMTEXT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_evidence_analysis FOREIGN KEY (analysis_id) REFERENCES analyses(id) ON DELETE CASCADE
 );

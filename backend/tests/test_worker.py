@@ -1,5 +1,7 @@
 import asyncio
 import uuid
+import pytest
+from backend.app import worker
 from backend.app.queue import get_analysis_queue
 from backend.app.worker import create_analysis_worker
 from backend.app.services.redis_state import set_analysis_state, get_analysis_state
@@ -57,3 +59,42 @@ async def test_worker_processes_analysis_job():
     finally:
         await worker.close()
         await queue.close()
+
+async def test_worker_marks_analysis_failed(monkeypatch):
+    analysis_id = f"test-analysis-failure-{uuid.uuid4()}"
+
+    class FakeJob:
+        id = f"test-worker-failure-{uuid.uuid4()}"
+        data = {
+            "repository_path": "./compiler",
+            "analysis_id": analysis_id,
+            "limit": 100,
+        }
+
+    def fake_analyze_repository(request, analysis_id):
+        raise RuntimeError("Test analysis failure")
+
+    monkeypatch.setattr(
+        worker,
+        "analyze_repository",
+        fake_analyze_repository,
+    )
+
+    job = FakeJob()
+
+    try:
+        with pytest.raises(RuntimeError, match="Test analysis failure"):
+            await worker.process_analysis_job(job, None)
+
+        analysis_state = get_analysis_state(analysis_id)
+
+        assert analysis_state["status"] == "failed"
+        assert analysis_state["stage"] == "failed"
+        assert analysis_state["progress"] == "20"
+
+    finally:
+        from backend.app.redis import get_redis_connection
+
+        redis = get_redis_connection()
+        redis.delete(f"analysis:{analysis_id}")
+        redis.close()

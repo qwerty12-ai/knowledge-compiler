@@ -1,9 +1,13 @@
 import asyncio
+import traceback
+
 from bullmq import Worker
-from backend.app.queue import ANALYSIS_QUEUE_NAME
-from backend.app.services.redis_state import set_analysis_state
-from backend.app.services.analysis import analyze_repository
-from backend.app.models import AnalysisRequest
+
+from .models import AnalysisRequest
+from .queue import ANALYSIS_QUEUE_NAME
+from .services.analysis import analyze_repository
+from .services.redis_state import set_analysis_state
+
 
 async def process_analysis_job(job, token):
     print(f"Processing job: {job.id}")
@@ -15,37 +19,54 @@ async def process_analysis_job(job, token):
     set_analysis_state(
         analysis_id=analysis_id,
         status="running",
-        stage="analysis",
-        progress=20
+        stage="discovery",
+        progress=5,
     )
 
-    request = AnalysisRequest(
-        repository_path=repository_path,
-        limit=job.data.get("limit", 100),
-        with_ai=job.data.get("with_ai", False)
-    )
+    try:
+        request = AnalysisRequest(
+            repository_path=repository_path,
+            limit=job.data.get("limit", 100),
+            with_ai=job.data.get("with_ai", False),
+        )
 
-    result = await asyncio.to_thread(
-        analyze_repository,
-        request
-    )
+        database_id = await asyncio.to_thread(
+            analyze_repository,
+            request,
+            analysis_id,
+        )
+
+    except Exception as error:
+        print(f"Analysis {analysis_id} failed: {error}")
+        traceback.print_exc()
+
+        set_analysis_state(
+            analysis_id=analysis_id,
+            status="failed",
+            stage="failed",
+            progress=20,
+        )
+
+        raise
 
     set_analysis_state(
         analysis_id=analysis_id,
         status="completed",
         stage="completed",
-        progress=100
-    )   
+        progress=100,
+        database_id=database_id,
+    )
 
     return {
         "status": "processed",
-        "job_id": job.id
+        "job_id": job.id,
     }
+
 
 async def create_analysis_worker():
     worker = Worker(
         ANALYSIS_QUEUE_NAME,
-        process_analysis_job
+        process_analysis_job,
     )
 
     return worker

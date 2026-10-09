@@ -1,0 +1,169 @@
+@import "tailwindcss";
+
+:root {
+  /* ─────────────────────────────────────────
+     Core surfaces
+     ───────────────────────────────────────── */
+
+  --background: #0b0c0e;
+  --surface: #101216;
+  --surface-elevated: #15171b;
+  --surface-hover: #191c21;
+
+  /* ─────────────────────────────────────────
+     Borders
+     ───────────────────────────────────────── */
+
+  --border: #24272d;
+  --border-subtle: #1b1e23;
+  --border-strong: #30343b;
+
+  /* ─────────────────────────────────────────
+     Typography
+     ───────────────────────────────────────── */
+
+  --foreground: #e8e9ec;
+  --foreground-secondary: #a6a9b0;
+  --foreground-muted: #6f737c;
+  --foreground-faint: #4b4f57;
+
+  /* ─────────────────────────────────────────
+     Brand / semantic accent
+     ───────────────────────────────────────── */
+
+  --accent: #d6a84f;
+  --accent-hover: #e2b963;
+  --accent-muted: #8d7037;
+
+  /* ─────────────────────────────────────────
+     Knowledge states
+     ───────────────────────────────────────── */
+
+  --supported: #6fa889;
+  --supported-muted: #385846;
+
+  --contradicted: #c56f6f;
+  --contradicted-muted: #633a3a;
+
+  --unknown: #858991;
+  --unknown-muted: #45484f;
+
+  --stale: #c49a58;
+  --stale-muted: #69532f;
+
+  --weak: #b5a15f;
+  --weak-muted: #615731;
+
+  /* ─────────────────────────────────────────
+     Focus / interaction
+     ───────────────────────────────────────── */
+
+  --focus-ring: rgba(214, 168, 79, 0.35);
+
+  /* ─────────────────────────────────────────
+     Typography
+     ───────────────────────────────────────── */
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-muted: var(--foreground-muted);
+  --color-faint: var(--foreground-faint);
+
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-hover: var(--surface-hover);
+
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+
+  --color-supported: var(--supported);
+  --color-contradicted: var(--contradicted);
+  --color-unknown: var(--unknown);
+  --color-stale: var(--stale);
+  --color-weak: var(--weak);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ─────────────────────────────────────────
+   Base
+   ───────────────────────────────────────── */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--background);
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ─────────────────────────────────────────
+   Selection
+   ───────────────────────────────────────── */
+
+::selection {
+  background: rgba(214, 168, 79, 0.22);
+  color: var(--foreground);
+}
+
+/* ─────────────────────────────────────────
+   Scrollbars
+   ───────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground-faint);
+}
+
+/* ─────────────────────────────────────────
+   Focus
+   ───────────────────────────────────────── */
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* ─────────────────────────────────────────
+   Links
+   ───────────────────────────────────────── */
+
+a {
+  color: inherit;
+  text-decoration: none;
+}

@@ -1,11 +1,20 @@
-import pytest
-from backend.app.services.redis_inspector import inspect_analysis_state, inspect_analysis_queue, inspect_analysis_channel 
-from backend.app.services.redis_state import set_analysis_state, ANALYSIS_CHANNEL
+import uuid
+
+from backend.app.services.redis_inspector import (
+    inspect_analysis_state,
+    inspect_analysis_queue,
+    inspect_analysis_channel,
+)
+from backend.app.services.redis_state import (
+    set_analysis_state,
+    ANALYSIS_CHANNEL,
+)
 from backend.app.services.redis_subscriber import get_analysis_events
 from backend.app.queue import get_analysis_queue
 
+
 def test_inspect_analysis_state():
-    analysis_id = "test-inspector"
+    analysis_id = f"test-{uuid.uuid4()}"
 
     set_analysis_state(
         analysis_id=analysis_id,
@@ -17,14 +26,43 @@ def test_inspect_analysis_state():
     result = inspect_analysis_state(analysis_id)
 
     assert result["analysis_id"] == analysis_id
-
     assert result["state"] == {
         "status": "running",
         "stage": "analysis",
         "progress": "20",
     }
-
     assert result["ttl"] > 0
+
+
+def test_inspect_analysis_state_resolves_database_id():
+    analysis_uuid = f"test-{uuid.uuid4()}"
+    database_id = uuid.uuid4().int % 1_000_000_000 + 1
+
+    set_analysis_state(
+        analysis_id=analysis_uuid,
+        status="completed",
+        stage="completed",
+        progress=100,
+        database_id=database_id,
+    )
+
+    result = inspect_analysis_state(str(database_id))
+
+    assert result["analysis_id"] == analysis_uuid
+    assert result["state"]["database_id"] == str(database_id)
+    assert result["state"]["status"] == "completed"
+    assert result["ttl"] > 0
+
+
+def test_inspect_missing_analysis_state():
+    missing_id = f"missing-{uuid.uuid4()}"
+
+    result = inspect_analysis_state(missing_id)
+
+    assert result["analysis_id"] == missing_id
+    assert result["state"] == {}
+    assert result["ttl"] == -2
+
 
 async def test_inspect_analysis_queue():
     queue = get_analysis_queue()
@@ -53,7 +91,8 @@ async def test_inspect_analysis_queue():
     finally:
         await queue.close()
 
-def test_inspect_analysis_channel() -> dict:
+
+def test_inspect_analysis_channel():
     redis, pubsub = get_analysis_events()
 
     try:

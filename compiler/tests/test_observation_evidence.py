@@ -1,4 +1,5 @@
 from pathlib import Path
+from knowledge_compiler.models import Observation
 from knowledge_compiler.investigation import InvestigationUnit
 from knowledge_compiler.investigator import InvestigationResult
 from knowledge_compiler.observation_evidence import (
@@ -17,7 +18,15 @@ def test_convert_observations_to_evidence():
 
     result = InvestigationResult(
         unit=unit,
-        observations=("The function returns True.",),
+        observations=(
+            Observation(
+                unit_id=unit.unit_id,
+                statement="The function returns True.",
+                source=unit.source,
+                line_start=unit.line_start,
+                line_end=unit.line_end
+            )
+        ,),
     )
 
     evidence = convert_observations_to_evidence(result)

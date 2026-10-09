@@ -1,6 +1,6 @@
 import json
 from backend.app.redis import get_redis_connection
-from backend.app.services.redis_state import (set_analysis_state, get_analysis_state, publish_analysis_event, ANALYSIS_STATE_TTL, ANALYSIS_CHANNEL)
+from backend.app.services.redis_state import (set_analysis_state, get_analysis_state, ANALYSIS_STATE_TTL, ANALYSIS_CHANNEL)
 
 def test_set_and_get_analysis_state():
     analysis_id = "test-analysis-1"
@@ -29,7 +29,7 @@ def test_analysis_state_has_ttl():
     )
 
     redis = get_redis_connection()
-    key=f"analysis: {analysis_id}"
+    key=f"analysis:{analysis_id}"
 
     ttl = redis.ttl(key)
 
@@ -44,7 +44,7 @@ def test_publish_analysis_event():
         pubsub.subscribe(ANALYSIS_CHANNEL)
         pubsub.get_message(timeout=1)
 
-        publish_analysis_event(
+        set_analysis_state(
             analysis_id="test-analysis",
             status="running",
             stage="analysis",
