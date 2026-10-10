@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=75"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,9 +8,12 @@ version = "0.1.0"
 description = "An evidence-backed engineering knowledge compiler for software repositories."
 readme = "README.md"
 requires-python = ">=3.14"
-license = {text = "MIT"}
+license = "LicenseRef-Proprietary"
 authors = [{name = "Mohd Abdul Sabeeh"}]
 dependencies = ["ollama", "Pillow>=12.3.0", "CairoSVG>=2.9.1"]
+
+[project.urls]
+Repository = "https://github.com/qwerty12-ai/knowledge-compiler"
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
