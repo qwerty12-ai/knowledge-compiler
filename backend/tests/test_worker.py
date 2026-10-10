@@ -24,7 +24,7 @@ async def test_worker_processes_analysis_job():
         job = await queue.add(
             "analyze-repository",
             {
-                "repository_path": "./compiler",
+                "repository_path": "/workspace/knowledge-compiler/compiler",
                 "analysis_id": analysis_id,
                 "limit": 100
             },

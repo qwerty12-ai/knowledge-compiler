@@ -149,7 +149,9 @@ def test_human_output_shows_claim_evidence_and_workstation_guidance(
     assert "[file content] payment.py:1-8" in output
     assert "Payment processing implementation." in output
     assert "Preview: def process_payment(amount): return amount > 0" in output
-    assert "Create a new analysis of this same repository" in output
+    assert "To analyze a project in the terminal" in output
+    assert "knowledge-compiler analyze ./compiler" in output
+    assert "For the forensic workstation:" in output
     assert "does not automatically appear in the workstation" in output
 
 

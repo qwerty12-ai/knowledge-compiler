@@ -94,7 +94,7 @@ export function AnalyzeForm() {
 
             <p className="mt-2 text-xs leading-5 text-foreground-muted">
               Enter the path to the root directory of the project you want
-              to analyze. The project must be available in the workstation's
+              to analyze. The project must be available in the workstation&apos;s
               shared workspace.
             </p>
 
