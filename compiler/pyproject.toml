@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.14"
 license = {text = "MIT"}
 authors = [{name = "Mohd Abdul Sabeeh"}]
-dependencies = ["ollama"]
+dependencies = ["ollama", "Pillow>=12.3.0", "CairoSVG>=2.9.1"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
@@ -24,3 +24,6 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.setuptools.package-data]
+knowledge_compiler = ["assets/*.svg"]
