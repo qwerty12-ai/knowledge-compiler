@@ -4,7 +4,7 @@ import traceback
 from bullmq import Worker
 
 from .models import AnalysisRequest
-from .queue import ANALYSIS_QUEUE_NAME
+from .queue import ANALYSIS_QUEUE_NAME, get_redis_options
 from .services.analysis import analyze_repository
 from .services.redis_state import set_analysis_state
 
@@ -67,6 +67,9 @@ async def create_analysis_worker():
     worker = Worker(
         ANALYSIS_QUEUE_NAME,
         process_analysis_job,
+        {
+            "connection": get_redis_options()
+        }
     )
 
     return worker

@@ -1,8 +1,7 @@
 services:
   mysql:
     image: mysql:8.4
-    container_name:
-      knowledge-compiler-mysql
+    container_name: knowledge-compiler-mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -15,24 +14,99 @@ services:
       - mysql_data:/var/lib/mysql
       - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     healthcheck:
-      test: ["CMD","mysqladmin","ping","-h","localhost","-u","${MYSQL_USER}","-p${MYSQL_PASSWORD}"]
+      test:
+        - CMD-SHELL
+        - 'mysqladmin ping -h localhost -u "$$MYSQL_USER" -p"$$MYSQL_PASSWORD"'
       interval: 5s
       timeout: 5s
       retries: 10
+
   redis:
     image: redis:7
-    container_name:
-      knowledge-compiler-redis
+    container_name: knowledge-compiler-redis
     restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD","redis-cli","ping"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: knowledge-compiler-api
+    user: "${HOST_UID:?HOST_UID is required}:${HOST_GID:?HOST_GID is required}"
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MYSQL_HOST: mysql
+      REDIS_HOST: redis
+    ports:
+      - "8000:8000"
+    volumes:
+      - type: bind
+        source: ${HOME:?HOME must be set}
+        target: /workspace
+        read_only: true
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: knowledge-compiler-worker
+    user: "${HOST_UID:?HOST_UID is required}:${HOST_GID:?HOST_GID is required}"
+    restart: unless-stopped
+    command: ["python", "-m", "backend.run_worker"]
+    env_file:
+      - .env
+    environment:
+      MYSQL_HOST: mysql
+      REDIS_HOST: redis
+    volumes:
+      - type: bind
+        source: ${HOME:?HOME must be set}
+        target: /workspace
+        read_only: true
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: knowledge-compiler-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      api:
+        condition: service_healthy
 
 volumes:
   mysql_data:

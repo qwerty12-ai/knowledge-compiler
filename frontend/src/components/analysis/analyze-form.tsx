@@ -6,18 +6,11 @@ import { createAnalysis } from "@/lib/api/analyses";
 import { Panel } from "@/components/ui/primitives";
 
 export function AnalyzeForm() {
-  const [repositoryPath, setRepositoryPath] =
-    useState("./compiler");
-
+  const [repositoryPath, setRepositoryPath] = useState("");
   const [limit, setLimit] = useState("100");
-
   const [withAi, setWithAi] = useState(false);
-
-  const [isSubmitting, setIsSubmitting] =
-    useState(false);
-
-  const [error, setError] =
-    useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const router = useRouter();
 
@@ -26,13 +19,22 @@ export function AnalyzeForm() {
   ) {
     event.preventDefault();
 
-    if (withAi) {
-        const parsedLimit = Number(limit)
+    const path = repositoryPath.trim();
 
-        if(!Number.isInteger(parsedLimit) || parsedLimit < 1) {
-            setError("AI investigation limit must be a whole number greater than 0");
-            return;
-        }
+    if (!path) {
+      setError("Enter the path to the project you want to analyze.");
+      return;
+    }
+
+    if (withAi) {
+      const parsedLimit = Number(limit);
+
+      if (!Number.isInteger(parsedLimit) || parsedLimit < 1) {
+        setError(
+          "AI investigation limit must be a whole number greater than 0",
+        );
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -40,17 +42,12 @@ export function AnalyzeForm() {
 
     try {
       const result = await createAnalysis({
-        repository_path: repositoryPath,
-        limit:
-          withAi && limit
-            ? Number(limit)
-            : null,
+        repository_path: path,
+        limit: withAi ? Number(limit) : null,
         with_ai: withAi,
       });
 
-      router.push(
-        `/analyses/${result.analysis_id}`,
-      );
+      router.push(`/analyses/${result.analysis_id}`);
     } catch (error) {
       setError(
         error instanceof Error
@@ -71,7 +68,8 @@ export function AnalyzeForm() {
           </h2>
 
           <p className="mt-1 text-sm text-foreground-muted">
-            Tell Knowledge Compiler where the repository lives.
+            Choose the project directory you want Knowledge Compiler to
+            analyze.
           </p>
         </div>
 
@@ -81,23 +79,37 @@ export function AnalyzeForm() {
               htmlFor="repository-path"
               className="mb-2 block text-xs font-medium uppercase tracking-[0.14em] text-foreground-muted"
             >
-              Repository path
+              Project root path
             </label>
 
             <input
               id="repository-path"
               type="text"
               value={repositoryPath}
-              onChange={(event) =>
-                setRepositoryPath(event.target.value)
-              }
-              placeholder="./compiler"
+              onChange={(event) => setRepositoryPath(event.target.value)}
+              placeholder="/workspace/my-project"
+              required
               className="w-full border border-border-strong bg-background px-3 py-2.5 font-mono text-sm text-foreground outline-none transition focus:border-accent focus:ring-1 focus:ring-[var(--focus-ring)]"
             />
 
-            <p className="mt-2 text-xs text-foreground-muted">
-              Use a local path that the Knowledge Compiler
-              backend can access.
+            <p className="mt-2 text-xs leading-5 text-foreground-muted">
+              Enter the path to the root directory of the project you want
+              to analyze. The project must be available in the workstation's
+              shared workspace.
+            </p>
+
+            <p className="mt-2 text-xs leading-5 text-foreground-muted">
+              Example project:{" "}
+              <code>/workspace/my-project</code>
+              <br />
+              Example subdirectory:{" "}
+              <code>/workspace/my-project/src</code>
+            </p>
+
+            <p className="mt-2 text-xs leading-5 text-foreground-muted">
+              Put your project in the configured projects directory and use
+              its corresponding workspace path. The directory must be
+              accessible to both the API and worker.
             </p>
           </div>
 
@@ -109,42 +121,38 @@ export function AnalyzeForm() {
                 </p>
 
                 <p className="mt-1 max-w-xl text-sm leading-5 text-foreground-muted">
-                  Allow the compiler investigate selected
-                  repository context with the configured AI
-                  investigator.
+                  Allow the compiler to investigate selected project
+                  context with the configured AI investigator.
                 </p>
+
+                {!withAi && (
+                  <p className="mt-2 text-xs text-foreground-faint">
+                    Enable AI investigation to configure this limit.
+                  </p>
+                )}
               </div>
 
               <button
                 type="button"
-                onClick={() =>
-                  setWithAi((value) => !value)
-                }
+                onClick={() => setWithAi((value) => !value)}
                 className="relative flex h-8 w-14 shrink-0 items-center rounded-full border border-border bg-surface-elevated p-1"
                 aria-pressed={withAi}
                 aria-label="Toggle AI investigation"
               >
                 <span
                   className={`flex h-6 w-6 items-center justify-center rounded-full bg-white text-[10px] font-semibold text-black transition-transform duration-200 ${
-                      withAi
-                      ? "translate-x-6"
-                      : "translate-x-0"
-                    }`}
+                    withAi ? "translate-x-6" : "translate-x-0"
+                  }`}
                 >
                   {withAi ? "AI" : ""}
                 </span>
               </button>
-              {!withAi && (<p className="mt-2 text-xs text-foreground-faint">
-                  Enable AI investigation to configure this limit.
-              </p>)}
             </div>
           </div>
 
           <div
             className={`transition-opacity ${
-              withAi
-                ? "opacity-100"
-                : "opacity-60"
+              withAi ? "opacity-100" : "opacity-60"
             }`}
           >
             <label
@@ -158,43 +166,34 @@ export function AnalyzeForm() {
               id="ai-limit"
               type="number"
               min="1"
+              step="1"
               value={limit}
               disabled={!withAi}
-              onChange={(event) =>
-                setLimit(event.target.value)
-              }
+              onChange={(event) => setLimit(event.target.value)}
               className="w-40 border border-border-strong bg-background px-3 py-2.5 font-mono text-sm text-foreground outline-none transition focus:border-accent focus:ring-1 focus:ring-[var(--focus-ring)] disabled:cursor-not-allowed"
             />
 
             <p className="mt-2 text-xs text-foreground-muted">
-              Maximum number of investigation units the AI
-              investigator may investigate. Deterministic
-              repository always runs independently of this limit.
+              Maximum number of investigation units the AI investigator may
+              investigate. Deterministic repository analysis runs
+              independently of this limit.
             </p>
-
           </div>
         </div>
 
         {error && (
           <div className="border-t border-border px-6 py-4">
-            <p className="text-sm text-contradicted">
-              {error}
-            </p>
+            <p className="text-sm text-contradicted">{error}</p>
           </div>
         )}
 
         <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
           <button
             type="submit"
-            disabled={
-              isSubmitting ||
-              !repositoryPath.trim()
-            }
+            disabled={isSubmitting || !repositoryPath.trim()}
             className="bg-accent px-4 py-2.5 text-sm font-semibold text-[#111] transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isSubmitting
-              ? "Starting analysis..."
-              : "Analyze repository →"}
+            {isSubmitting ? "Starting analysis..." : "Analyze repository →"}
           </button>
         </div>
       </form>

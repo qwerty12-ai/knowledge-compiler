@@ -124,16 +124,18 @@ async def create_analysis(
     )
 
     queue = get_analysis_queue()
-
-    job = await queue.add(
-        "analyze-repository",
-        {
-            "repository_path": str(repository_path),
-            "analysis_id": analysis_id,
-            "limit": request.limit,
-            "with_ai": request.with_ai,
-        },
-    )
+    try:
+        job = await queue.add(
+            "analyze-repository",
+            {
+                "repository_path": str(repository_path),
+                "analysis_id": analysis_id,
+                "limit": request.limit,
+                "with_ai": request.with_ai,
+            },
+        )
+    finally:
+        await queue.close()
 
 
     return {

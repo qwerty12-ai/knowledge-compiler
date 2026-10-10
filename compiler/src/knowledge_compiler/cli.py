@@ -6,6 +6,7 @@ import sys
 from knowledge_compiler.pipeline import compile_repository
 from .terminal_logo import render_terminal_logo
 
+
 class TerminalStyle:
     AMBER = "\033[38;5;214m"
     GRAPHITE = "\033[38;5;242m"
@@ -17,6 +18,7 @@ class TerminalStyle:
         return (
             sys.stdout.isatty() and "NO_COLOR" not in os.environ
         )
+
 
 STATUS_SYMBOLS = {
     "VERIFIED": "[+]",
@@ -38,6 +40,7 @@ def serialize_result(result, compact: bool = False) -> str:
         evidence["content"] = None
 
     return json.dumps(payload, indent=2)
+
 
 def print_banner() -> None:
     use_color = TerminalStyle.colors_enabled()
@@ -74,6 +77,7 @@ def print_banner() -> None:
         print(f"  {logo_line}  {text}")
 
     print()
+
 
 def print_human_result(result) -> None:
     use_color = TerminalStyle.colors_enabled()
@@ -187,18 +191,29 @@ def print_human_result(result) -> None:
     print()
     print(paint("READY TO INVESTIGATE FURTHER?", TerminalStyle.AMBER))
     print(
-        "Create a new analysis of this same repository in the Knowledge "
-        "Compiler forensic workstation."
+        "To analyze a project in the terminal, pass its root directory "
+        "as the argument to 'knowledge-compiler analyze'."
     )
+    print("Example: knowledge-compiler analyze ./compiler")
     print(
-        "Explore claims and their supporting evidence in greater depth, "
-        "then consult an AI assistant if needed."
-    )
-    print(
-        "Note: this CLI analysis does not automatically appear in the "
-        "workstation."
+        "The relative path './compiler' is resolved from your current "
+        "working directory."
     )
     print()
+    print("For the forensic workstation:")
+    print(
+        "Place the project you want to analyze inside the configured "
+        "projects directory."
+    )
+    print(
+        "Enter its workspace path, such as '/workspace/my-project', "
+        "in the workstation."
+    )
+    print(
+        "This CLI analysis does not automatically appear in the workstation."
+    )
+    print()
+
 
 def analyze(
     repository: str,
@@ -213,21 +228,38 @@ def analyze(
 
 
 def main() -> None:
+    examples = (
+        "Examples:\n"
+        "  knowledge-compiler analyze ./compiler\n"
+        "  knowledge-compiler analyze ../my-project\n"
+        "  knowledge-compiler analyze /path/to/my-project"
+    )
+
     parser = argparse.ArgumentParser(
         prog="knowledge-compiler",
-        description="Analyze a software repository and build engineering knowledge",
+        description=(
+            "Analyze a software project and build evidence-backed "
+            "engineering knowledge."
+        ),
+        epilog=examples,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
     subparsers = parser.add_subparsers(dest="command")
 
     analyze_parser = subparsers.add_parser(
         "analyze",
-        help="Analyze a repository",
+        help="Analyze a project directory",
+        description=(
+            "Analyze a project by providing the path to its root directory."
+        ),
+        epilog=examples,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
     analyze_parser.add_argument(
         "repository",
-        help="Path to the repository to analyze",
+        help="Path to the root directory of the project to analyze",
     )
 
     analyze_parser.add_argument(

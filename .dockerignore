@@ -1,0 +1,54 @@
+# Git
+.git
+.git/**
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Python
+.venv
+.venv/**
+**/.venv
+**/.venv/**
+__pycache__
+**/__pycache__
+*.py[cod]
+.pytest_cache
+**/.pytest_cache
+.mypy_cache
+**/.mypy_cache
+.ruff_cache
+**/.ruff_cache
+*.egg-info
+**/*.egg-info
+
+# Node.js
+**/node_modules
+**/.next
+**/out
+**/coverage
+**/*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Build output
+**/dist
+**/build
+
+# Editors and operating systems
+.vscode
+**/.vscode
+.idea
+**/.idea
+.DS_Store
+Thumbs.db
+
+# Local tooling
+.vercel
+**/.vercel
