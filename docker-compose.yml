@@ -83,6 +83,7 @@ services:
     environment:
       MYSQL_HOST: mysql
       REDIS_HOST: redis
+      OLLAMA_HOST: http://host.docker.internal:11434
     volumes:
       - type: bind
         source: ${HOME:?HOME must be set}
